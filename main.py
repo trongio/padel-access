@@ -37,9 +37,9 @@ _input_buffer = ""
 _input_lock = threading.Lock()
 _input_timer: threading.Timer | None = None
 
-# Brute-force protection
-_MAX_FAILED_ATTEMPTS = 5
-_LOCKOUT_SECONDS = 60
+# Brute-force protection (generous to avoid locking out real users)
+_MAX_FAILED_ATTEMPTS = 20
+_LOCKOUT_SECONDS = 30
 _failed_attempts = 0
 _lockout_until: float = 0.0
 
