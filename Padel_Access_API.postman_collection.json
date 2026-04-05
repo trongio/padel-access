@@ -1,0 +1,273 @@
+{
+	"info": {
+		"name": "Padel Access Control API",
+		"description": "API collection for the Padel Facility Access Control System.\n\n## Setup\n1. Go to the **Variables** tab of this collection\n2. Set `base_url` to your server URL (e.g. `https://padel.hackerman.ge`)\n3. Set `api_key` to your API key\n\n## Endpoints\n- **Health** — No auth required\n- **Codes** — CRUD for access codes\n- **Control** — Remote door unlock and light control\n- **Logs** — Audit log viewer",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://padel.hackerman.ge",
+			"type": "string"
+		},
+		{
+			"key": "api_key",
+			"value": "YOUR_API_KEY_HERE",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{api_key}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "System",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/health",
+							"host": ["{{base_url}}"],
+							"path": ["api", "health"]
+						},
+						"description": "Check if the system is running. No authentication required.\n\nReturns status and uptime in seconds."
+					}
+				},
+				{
+					"name": "Get Audit Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/logs?limit=50",
+							"host": ["{{base_url}}"],
+							"path": ["api", "logs"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "50",
+									"description": "Number of log entries to return (max 500)"
+								},
+								{
+									"key": "event",
+									"value": "DOOR_OPEN",
+									"description": "Filter by event type: DOOR_OPEN, LIGHT_ON, LIGHT_OFF, CODE_FAIL, REMOTE_DOOR, REMOTE_LIGHT",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Retrieve audit log entries. Optionally filter by event type.\n\n**Event types:**\n- `DOOR_OPEN` — Door was unlocked (keypad or button)\n- `LIGHT_ON` / `LIGHT_OFF` — Lights toggled\n- `CODE_FAIL` — Invalid code entered\n- `REMOTE_DOOR` — Door unlocked via API\n- `REMOTE_LIGHT` — Lights controlled via API"
+					}
+				}
+			],
+			"description": "Health check and audit logs."
+		},
+		{
+			"name": "Access Codes",
+			"item": [
+				{
+					"name": "Create Access Code",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"1234\",\n    \"light_ids\": [1, 2],\n    \"valid_from\": \"2026-04-05T08:00:00\",\n    \"valid_until\": \"2026-04-05T22:00:00\",\n    \"label\": \"Court 1 - John\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/codes",
+							"host": ["{{base_url}}"],
+							"path": ["api", "codes"]
+						},
+						"description": "Create a new access code for the facility.\n\n**Fields:**\n- `code` — The numeric code the user will enter on the keypad\n- `light_ids` — Which light zones to activate: `[1]`, `[2]`, or `[1, 2]`\n- `valid_from` — Start of validity window (UTC)\n- `valid_until` — End of validity window (UTC). Lights auto-off at this time\n- `label` — Human-readable label (e.g. customer name, court number)"
+					}
+				},
+				{
+					"name": "List All Codes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/codes?active_only=false",
+							"host": ["{{base_url}}"],
+							"path": ["api", "codes"],
+							"query": [
+								{
+									"key": "active_only",
+									"value": "false",
+									"description": "Set to true to only show active (non-deleted) codes"
+								}
+							]
+						},
+						"description": "List all access codes. Use `active_only=true` to filter out deactivated codes."
+					}
+				},
+				{
+					"name": "Get Single Code",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/codes/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "codes", "1"]
+						},
+						"description": "Get details of a specific access code by ID."
+					}
+				},
+				{
+					"name": "Update Code",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"valid_until\": \"2026-04-05T23:30:00\",\n    \"label\": \"Court 1 - John (extended)\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/codes/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "codes", "1"]
+						},
+						"description": "Update an existing access code. All fields are optional — only include the fields you want to change.\n\n**Updatable fields:**\n- `code`, `light_ids`, `valid_from`, `valid_until`, `label`, `is_active`"
+					}
+				},
+				{
+					"name": "Deactivate Code",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/codes/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "codes", "1"]
+						},
+						"description": "Soft-delete an access code. The code will no longer work on the keypad and any scheduled light-off jobs are cancelled.\n\nThe code remains in the database with `is_active: false`."
+					}
+				}
+			],
+			"description": "Create, list, update, and deactivate access codes.\n\nEach code unlocks the door and activates the specified light zones for the duration of the validity window."
+		},
+		{
+			"name": "Remote Control",
+			"item": [
+				{
+					"name": "Unlock Door",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/control/door",
+							"host": ["{{base_url}}"],
+							"path": ["api", "control", "door"]
+						},
+						"description": "Remotely unlock the door for the configured duration (default 5 seconds)."
+					}
+				},
+				{
+					"name": "Turn Lights On",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"light_ids\": [1, 2],\n    \"action\": \"on\",\n    \"until\": \"2026-04-05T23:00:00\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/control/lights",
+							"host": ["{{base_url}}"],
+							"path": ["api", "control", "lights"]
+						},
+						"description": "Turn on light zones. The `until` field is required — lights will automatically turn off at that time.\n\n**Light zones:** `1` and `2`"
+					}
+				},
+				{
+					"name": "Turn Lights Off",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"light_ids\": [1, 2],\n    \"action\": \"off\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/control/lights",
+							"host": ["{{base_url}}"],
+							"path": ["api", "control", "lights"]
+						},
+						"description": "Turn off specific light zones."
+					}
+				},
+				{
+					"name": "Turn All Lights Off",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"action\": \"off_all\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/control/lights",
+							"host": ["{{base_url}}"],
+							"path": ["api", "control", "lights"]
+						},
+						"description": "Emergency off — turn off all light zones immediately."
+					}
+				},
+				{
+					"name": "Get Relay Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/control/status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "control", "status"]
+						},
+						"description": "Get current status of the door lock and all light zones.\n\nShows whether each relay is on/off and when lights are scheduled to turn off."
+					}
+				}
+			],
+			"description": "Remote control for the door lock and light zones.\n\nUse these endpoints to unlock the door or control lights without a keypad code."
+		}
+	]
+}
