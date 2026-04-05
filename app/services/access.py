@@ -32,7 +32,7 @@ def validate_code(code: str) -> ValidationResult:
             logger.info("Code validation failed: invalid code")
             return ValidationResult(success=False, reason="Invalid code")
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
 
         if now < access_code.valid_from:
             logger.info("Code validation failed: not yet valid")

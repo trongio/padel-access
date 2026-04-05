@@ -3,6 +3,10 @@ import logging
 import secrets
 from datetime import datetime, timezone
 
+def _utcnow() -> datetime:
+    """Return current UTC time as naive datetime (matches SQLite storage)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 
@@ -64,7 +68,7 @@ def create_code(
     session.refresh(ac)
 
     # If code is already in its validity window, activate lights now
-    now = datetime.now(timezone.utc)
+    now = _utcnow()
     if ac.valid_from <= now < ac.valid_until:
         light_manager = request.app.state.light_manager
         for lid in body.light_ids:
@@ -94,7 +98,7 @@ def generate_code(
     session.commit()
     session.refresh(ac)
 
-    now = datetime.now(timezone.utc)
+    now = _utcnow()
     if ac.valid_from <= now < ac.valid_until:
         light_manager = request.app.state.light_manager
         for lid in body.light_ids:
@@ -122,7 +126,7 @@ def check_code(code: str, session: Session = Depends(get_session)):
     if not ac:
         return AccessCodeStatus(code=code, status="not_found")
 
-    now = datetime.now(timezone.utc)
+    now = _utcnow()
 
     if not ac.is_active:
         if ac.max_uses is not None and ac.use_count >= ac.max_uses:
@@ -186,7 +190,7 @@ def update_code(
     # Reschedule light jobs if valid_until changed
     if "valid_until" in update_data and ac.is_active:
         light_manager = request.app.state.light_manager
-        now = datetime.now(timezone.utc)
+        now = _utcnow()
         if ac.valid_from <= now < ac.valid_until:
             for lid in ac.light_ids_list:
                 light_manager.turn_on(lid, ac.valid_until)
