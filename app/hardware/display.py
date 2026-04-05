@@ -1,6 +1,7 @@
 import logging
 import queue
 import threading
+import time
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
@@ -12,6 +13,8 @@ from app import config
 
 logger = logging.getLogger(__name__)
 
+_CLOCK_REFRESH = 1.0  # seconds between idle clock updates
+
 
 class DisplayManager:
     """Queue-based OLED display manager. All I2C writes run on a single thread."""
@@ -22,6 +25,7 @@ class DisplayManager:
         self._running = True
         self._return_timer: threading.Timer | None = None
         self._tz = ZoneInfo(config.TZ)
+        self._idle = True  # tracks if we're showing the idle/clock screen
 
         try:
             serial = i2c(port=1, address=0x3C)
@@ -40,12 +44,14 @@ class DisplayManager:
         if not self._available:
             return
         self._cancel_timer()
+        self._idle = True
         self._queue.put({"type": "idle"})
 
     def show_input(self, masked: str) -> None:
         if not self._available:
             return
         self._cancel_timer()
+        self._idle = False
         self._queue.put({"type": "input", "masked": masked})
 
     def show_success(self, valid_until: datetime) -> None:
@@ -85,15 +91,25 @@ class DisplayManager:
     # ─── Internal ─────────────────────────────────
 
     def _run(self) -> None:
+        last_clock = 0.0
         while self._running:
             try:
-                cmd = self._queue.get(timeout=0.5)
+                cmd = self._queue.get(timeout=0.2)
             except queue.Empty:
+                # Auto-refresh clock when idle
+                if self._idle and time.time() - last_clock >= _CLOCK_REFRESH:
+                    try:
+                        self._render({"type": "idle"})
+                        last_clock = time.time()
+                    except Exception:
+                        logger.exception("Display clock refresh error")
                 continue
             if cmd is None:
                 break
             try:
                 self._render(cmd)
+                if cmd["type"] == "idle":
+                    last_clock = time.time()
             except Exception:
                 logger.exception("Display render error")
 
@@ -116,19 +132,28 @@ class DisplayManager:
         self._device.display(img)
 
     def _draw_idle(self, draw: ImageDraw.ImageDraw) -> None:
-        text = config.DISPLAY_IDLE_TEXT
-        subtext = config.DISPLAY_IDLE_SUBTEXT
-        # Center main text
-        bbox = draw.textbbox((0, 0), text, font=self._font)
+        now = datetime.now(self._tz)
+        title = config.DISPLAY_IDLE_TEXT
+
+        # Title at top
+        bbox = draw.textbbox((0, 0), title, font=self._font)
         w = bbox[2] - bbox[0]
         x = (128 - w) // 2
-        draw.text((x, 16), text, fill=1, font=self._font)
-        # Center subtext
-        if subtext:
-            bbox = draw.textbbox((0, 0), subtext, font=self._font)
-            w = bbox[2] - bbox[0]
-            x = (128 - w) // 2
-            draw.text((x, 36), subtext, fill=1, font=self._font)
+        draw.text((x, 4), title, fill=1, font=self._font)
+
+        # Time (large, centered)
+        time_str = now.strftime("%H:%M:%S")
+        bbox = draw.textbbox((0, 0), time_str, font=self._font)
+        w = bbox[2] - bbox[0]
+        x = (128 - w) // 2
+        draw.text((x, 24), time_str, fill=1, font=self._font)
+
+        # Date below time
+        date_str = now.strftime("%d %b %Y, %a")
+        bbox = draw.textbbox((0, 0), date_str, font=self._font)
+        w = bbox[2] - bbox[0]
+        x = (128 - w) // 2
+        draw.text((x, 44), date_str, fill=1, font=self._font)
 
     def _draw_input(self, draw: ImageDraw.ImageDraw, masked: str) -> None:
         draw.text((10, 8), "Enter Code:", fill=1, font=self._font)
