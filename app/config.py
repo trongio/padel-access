@@ -29,6 +29,7 @@ TZ: str = os.getenv("TZ", "UTC")
 
 # ─── Language & Display ───────────────────────────
 APP_LANG: str = os.getenv("APP_LANG", "EN")  # EN or KA
+CODE_LENGTH: int = int(os.getenv("CODE_LENGTH", "6"))  # 4-8 digits
 
 _TRANSLATIONS = {
     "EN": {

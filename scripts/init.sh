@@ -114,6 +114,10 @@ if [ -z "$ENV_SKIP" ]; then
   INPUT_LANG="${INPUT_LANG:-EN}"
   INPUT_LANG=$(echo "$INPUT_LANG" | tr '[:lower:]' '[:upper:]')
 
+  # Code length
+  read -rp "    Access code length (4-8 digits) [6]: " INPUT_CODE_LENGTH
+  INPUT_CODE_LENGTH="${INPUT_CODE_LENGTH:-6}"
+
   # Display idle text
   read -rp "    Display idle text [AllDigital]: " INPUT_IDLE_TEXT
   INPUT_IDLE_TEXT="${INPUT_IDLE_TEXT:-AllDigital}"
@@ -154,6 +158,7 @@ API_KEY=${INPUT_API_KEY}
 LOG_LEVEL=INFO
 TZ=${INPUT_TZ}
 APP_LANG=${INPUT_LANG}
+CODE_LENGTH=${INPUT_CODE_LENGTH}
 
 # ─── Display ──────────────────────────────────────
 DISPLAY_IDLE_TEXT=${INPUT_IDLE_TEXT}

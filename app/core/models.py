@@ -67,7 +67,7 @@ class _ValidatedCodeMixin:
 
 
 class AccessCodeCreate(_ValidatedCodeMixin, SQLModel):
-    code: str = Field(min_length=4, max_length=16, pattern=r"^[0-9A-D]+$")
+    code: str = Field(min_length=4, max_length=8, pattern=r"^[0-9A-D]+$")
     light_ids: list[int]
     valid_from: datetime
     valid_until: datetime
@@ -88,7 +88,7 @@ class AccessCodeGenerate(_ValidatedCodeMixin, SQLModel):
     valid_until: datetime
     label: Optional[str] = None
     max_uses: Optional[int] = Field(default=1, ge=1)  # defaults to one-time
-    code_length: int = Field(default=6, ge=4, le=10)
+    code_length: Optional[int] = Field(default=None, ge=4, le=8)  # None = use CODE_LENGTH from .env
 
     @field_validator("valid_until")
     @classmethod
@@ -99,7 +99,7 @@ class AccessCodeGenerate(_ValidatedCodeMixin, SQLModel):
 
 
 class AccessCodeUpdate(SQLModel):
-    code: Optional[str] = Field(default=None, min_length=4, max_length=16, pattern=r"^[0-9A-D]+$")
+    code: Optional[str] = Field(default=None, min_length=4, max_length=8, pattern=r"^[0-9A-D]+$")
     light_ids: Optional[list[int]] = None
     valid_from: Optional[datetime] = None
     valid_until: Optional[datetime] = None

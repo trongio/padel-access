@@ -10,6 +10,7 @@ def _utcnow() -> datetime:
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 
+from app import config
 from app.api.limiter import limiter
 from app.core.database import get_session, log_event
 from app.core.models import AccessCode, AccessCodeCreate, AccessCodeGenerate, AccessCodeRead, AccessCodeStatus, AccessCodeUpdate
@@ -87,7 +88,8 @@ def generate_code(
     request: Request,
     session: Session = Depends(get_session),
 ):
-    code = _generate_unique_code(session, body.code_length)
+    length = body.code_length if body.code_length is not None else config.CODE_LENGTH
+    code = _generate_unique_code(session, length)
 
     ac = AccessCode(
         code=code,
