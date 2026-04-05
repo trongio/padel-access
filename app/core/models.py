@@ -1,9 +1,12 @@
 import json
+import re
 from datetime import datetime, timezone
 from typing import Optional
 
 from pydantic import field_validator
 from sqlmodel import Field, SQLModel
+
+_CODE_PATTERN = re.compile(r"^[0-9A-D]+$")
 
 
 # ─── Database Tables ──────────────────────────────
@@ -66,13 +69,26 @@ class _ValidatedCodeMixin:
         return v
 
 
+def _validate_code_str(v: str) -> str:
+    if len(v) < 4 or len(v) > 8:
+        raise ValueError("code must be 4-8 characters")
+    if not _CODE_PATTERN.match(v):
+        raise ValueError("code must contain only digits 0-9 and letters A-D")
+    return v
+
+
 class AccessCodeCreate(_ValidatedCodeMixin, SQLModel):
-    code: str = Field(min_length=4, max_length=8, pattern=r"^[0-9A-D]+$")
+    code: str
     light_ids: list[int]
     valid_from: datetime
     valid_until: datetime
     label: Optional[str] = None
     max_uses: Optional[int] = Field(default=None, ge=1)  # None = unlimited, 1 = one-time
+
+    @field_validator("code")
+    @classmethod
+    def validate_code(cls, v: str) -> str:
+        return _validate_code_str(v)
 
     @field_validator("valid_until")
     @classmethod
@@ -99,13 +115,27 @@ class AccessCodeGenerate(_ValidatedCodeMixin, SQLModel):
 
 
 class AccessCodeUpdate(SQLModel):
-    code: Optional[str] = Field(default=None, min_length=4, max_length=8, pattern=r"^[0-9A-D]+$")
+    code: Optional[str] = None
     light_ids: Optional[list[int]] = None
     valid_from: Optional[datetime] = None
     valid_until: Optional[datetime] = None
-    label: Optional[str] = Field(default=None, max_length=100)
+    label: Optional[str] = None
     max_uses: Optional[int] = Field(default=None, ge=1)
     is_active: Optional[bool] = None
+
+    @field_validator("code")
+    @classmethod
+    def validate_code(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            return _validate_code_str(v)
+        return v
+
+    @field_validator("label")
+    @classmethod
+    def validate_label(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and len(v) > 100:
+            raise ValueError("label must be 100 characters or fewer")
+        return v
 
 
 class AccessCodeRead(SQLModel):
