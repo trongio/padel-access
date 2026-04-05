@@ -1,0 +1,230 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 750" font-family="'Segoe UI', Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#555"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#d32f2f"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1565c0"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#2e7d32"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#e65100"/>
+    </marker>
+    <filter id="shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="1" dy="1" stdDeviation="2" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1100" height="750" rx="12" fill="#f5f5f5"/>
+
+  <!-- Title -->
+  <text x="550" y="35" text-anchor="middle" font-size="20" font-weight="bold" fill="#212121">Padel Access Control — Wiring Diagram</text>
+  <text x="550" y="55" text-anchor="middle" font-size="12" fill="#757575">Raspberry Pi 4 GPIO (BCM numbering) — All relays active-LOW</text>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- Raspberry Pi -->
+  <!-- ═══════════════════════════════════════════ -->
+  <rect x="380" y="240" width="340" height="260" rx="16" fill="#1b5e20" stroke="#0d3d12" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="395" y="255" width="310" height="230" rx="10" fill="#2e7d32" opacity="0.5"/>
+  <text x="550" y="285" text-anchor="middle" font-size="18" font-weight="bold" fill="white">Raspberry Pi 4</text>
+  <text x="550" y="305" text-anchor="middle" font-size="11" fill="#a5d6a7">Ubuntu Server 24.04 LTS</text>
+
+  <!-- GPIO Pin Labels on the Pi -->
+  <!-- Left side pins -->
+  <text x="405" y="340" font-size="10" fill="#c8e6c9" font-weight="bold">GPIO Pins:</text>
+
+  <rect x="405" y="350" width="60" height="16" rx="3" fill="#1b5e20"/>
+  <text x="435" y="362" text-anchor="middle" font-size="9" fill="#a5d6a7">GPIO 17</text>
+
+  <rect x="405" y="372" width="60" height="16" rx="3" fill="#1b5e20"/>
+  <text x="435" y="384" text-anchor="middle" font-size="9" fill="#a5d6a7">GPIO 27</text>
+
+  <rect x="405" y="394" width="60" height="16" rx="3" fill="#1b5e20"/>
+  <text x="435" y="406" text-anchor="middle" font-size="9" fill="#a5d6a7">GPIO 22</text>
+
+  <rect x="405" y="416" width="60" height="16" rx="3" fill="#1b5e20"/>
+  <text x="435" y="428" text-anchor="middle" font-size="9" fill="#a5d6a7">GPIO 24</text>
+
+  <rect x="405" y="438" width="60" height="16" rx="3" fill="#1b5e20"/>
+  <text x="435" y="450" text-anchor="middle" font-size="9" fill="#a5d6a7">GPIO 26</text>
+
+  <!-- Right side pins -->
+  <rect x="635" y="350" width="60" height="16" rx="3" fill="#1b5e20"/>
+  <text x="665" y="362" text-anchor="middle" font-size="9" fill="#a5d6a7">I2C SDA/SCL</text>
+
+  <rect x="635" y="372" width="60" height="16" rx="3" fill="#1b5e20"/>
+  <text x="665" y="384" text-anchor="middle" font-size="9" fill="#a5d6a7">GPIO 5,6</text>
+
+  <rect x="635" y="394" width="60" height="16" rx="3" fill="#1b5e20"/>
+  <text x="665" y="406" text-anchor="middle" font-size="9" fill="#a5d6a7">GPIO 13,19</text>
+
+  <rect x="635" y="416" width="60" height="16" rx="3" fill="#1b5e20"/>
+  <text x="665" y="428" text-anchor="middle" font-size="9" fill="#a5d6a7">GPIO 12,16</text>
+
+  <rect x="635" y="438" width="60" height="16" rx="3" fill="#1b5e20"/>
+  <text x="665" y="450" text-anchor="middle" font-size="9" fill="#a5d6a7">GPIO 20,21</text>
+
+  <!-- Power labels -->
+  <text x="550" y="475" text-anchor="middle" font-size="10" fill="#c8e6c9">5V / 3.3V / GND</text>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- Door Lock Relay (left, top) -->
+  <!-- ═══════════════════════════════════════════ -->
+  <rect x="30" y="200" width="200" height="90" rx="10" fill="#fff" stroke="#d32f2f" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="30" y="200" width="200" height="24" rx="10" fill="#d32f2f"/>
+  <rect x="30" y="212" width="200" height="12" fill="#d32f2f"/>
+  <text x="130" y="218" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Door Lock Relay</text>
+  <text x="130" y="248" text-anchor="middle" font-size="11" fill="#333">1-Ch 5V Relay (AR0310)</text>
+  <text x="130" y="265" text-anchor="middle" font-size="10" fill="#d32f2f" font-weight="bold">GPIO 17</text>
+  <text x="130" y="280" text-anchor="middle" font-size="10" fill="#777">→ 12V Door Lock</text>
+
+  <!-- Wire: Door relay to Pi -->
+  <line x1="230" y1="265" x2="405" y2="358" stroke="#d32f2f" stroke-width="2" marker-end="url(#arrow-red)"/>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- Light Relay 1 (left, middle) -->
+  <!-- ═══════════════════════════════════════════ -->
+  <rect x="30" y="320" width="200" height="90" rx="10" fill="#fff" stroke="#e65100" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="30" y="320" width="200" height="24" rx="10" fill="#e65100"/>
+  <rect x="30" y="332" width="200" height="12" fill="#e65100"/>
+  <text x="130" y="338" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Light Zone 1</text>
+  <text x="130" y="368" text-anchor="middle" font-size="11" fill="#333">12-Ch Relay — Ch 1</text>
+  <text x="130" y="385" text-anchor="middle" font-size="10" fill="#e65100" font-weight="bold">GPIO 27</text>
+  <text x="130" y="400" text-anchor="middle" font-size="10" fill="#777">→ 220V Lights</text>
+
+  <!-- Wire: Light 1 to Pi -->
+  <line x1="230" y1="385" x2="405" y2="380" stroke="#e65100" stroke-width="2" marker-end="url(#arrow-orange)"/>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- Light Relay 2 (left, bottom) -->
+  <!-- ═══════════════════════════════════════════ -->
+  <rect x="30" y="440" width="200" height="90" rx="10" fill="#fff" stroke="#e65100" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="30" y="440" width="200" height="24" rx="10" fill="#e65100"/>
+  <rect x="30" y="452" width="200" height="12" fill="#e65100"/>
+  <text x="130" y="458" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Light Zone 2</text>
+  <text x="130" y="488" text-anchor="middle" font-size="11" fill="#333">12-Ch Relay — Ch 2</text>
+  <text x="130" y="505" text-anchor="middle" font-size="10" fill="#e65100" font-weight="bold">GPIO 22</text>
+  <text x="130" y="520" text-anchor="middle" font-size="10" fill="#777">→ 220V Lights</text>
+
+  <!-- Wire: Light 2 to Pi -->
+  <line x1="230" y1="505" x2="405" y2="402" stroke="#e65100" stroke-width="2" marker-end="url(#arrow-orange)"/>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- Buzzer (left, very bottom) -->
+  <!-- ═══════════════════════════════════════════ -->
+  <rect x="30" y="560" width="200" height="100" rx="10" fill="#fff" stroke="#6a1b9a" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="30" y="560" width="200" height="24" rx="10" fill="#6a1b9a"/>
+  <rect x="30" y="572" width="200" height="12" fill="#6a1b9a"/>
+  <text x="130" y="578" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Active Buzzer</text>
+  <text x="130" y="605" text-anchor="middle" font-size="10" fill="#333">GPIO 24 → 1kΩ → NPN base</text>
+  <text x="130" y="620" text-anchor="middle" font-size="10" fill="#333">Collector → Buzzer(-)</text>
+  <text x="130" y="635" text-anchor="middle" font-size="10" fill="#333">Buzzer(+) → 5V</text>
+  <text x="130" y="650" text-anchor="middle" font-size="10" fill="#6a1b9a" font-weight="bold">GPIO 24</text>
+
+  <!-- Wire: Buzzer to Pi -->
+  <line x1="230" y1="620" x2="370" y2="426" stroke="#6a1b9a" stroke-width="2"/>
+  <line x1="370" y1="426" x2="405" y2="426" stroke="#6a1b9a" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- Exit Button (bottom center) -->
+  <!-- ═══════════════════════════════════════════ -->
+  <rect x="380" y="560" width="200" height="80" rx="10" fill="#fff" stroke="#00695c" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="380" y="560" width="200" height="24" rx="10" fill="#00695c"/>
+  <rect x="380" y="572" width="200" height="12" fill="#00695c"/>
+  <text x="480" y="578" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Exit Button</text>
+  <text x="480" y="605" text-anchor="middle" font-size="11" fill="#333">NO Momentary Pushbutton</text>
+  <text x="480" y="622" text-anchor="middle" font-size="10" fill="#00695c" font-weight="bold">GPIO 26 (pull-up)</text>
+  <text x="480" y="635" text-anchor="middle" font-size="10" fill="#777">→ GND</text>
+
+  <!-- Wire: Exit button to Pi -->
+  <line x1="480" y1="560" x2="435" y2="454" stroke="#00695c" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- OLED Display (right, top) -->
+  <!-- ═══════════════════════════════════════════ -->
+  <rect x="850" y="200" width="210" height="100" rx="10" fill="#fff" stroke="#1565c0" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="850" y="200" width="210" height="24" rx="10" fill="#1565c0"/>
+  <rect x="850" y="212" width="210" height="12" fill="#1565c0"/>
+  <text x="955" y="218" text-anchor="middle" font-size="12" font-weight="bold" fill="white">OLED Display</text>
+  <text x="955" y="248" text-anchor="middle" font-size="11" fill="#333">0.96" SSD1306 128×64</text>
+  <text x="955" y="265" text-anchor="middle" font-size="10" fill="#1565c0" font-weight="bold">I2C: SDA=GPIO2, SCL=GPIO3</text>
+  <text x="955" y="282" text-anchor="middle" font-size="10" fill="#777">Addr: 0x3C</text>
+  <text x="955" y="295" text-anchor="middle" font-size="10" fill="#777">VCC → 3.3V, GND → GND</text>
+
+  <!-- Wire: OLED to Pi -->
+  <line x1="850" y1="265" x2="695" y2="358" stroke="#1565c0" stroke-width="2" marker-end="url(#arrow-blue)"/>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- Keypad (right, middle) -->
+  <!-- ═══════════════════════════════════════════ -->
+  <rect x="850" y="340" width="210" height="130" rx="10" fill="#fff" stroke="#2e7d32" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="850" y="340" width="210" height="24" rx="10" fill="#2e7d32"/>
+  <rect x="850" y="352" width="210" height="12" fill="#2e7d32"/>
+  <text x="955" y="358" text-anchor="middle" font-size="12" font-weight="bold" fill="white">4×4 Matrix Keypad</text>
+  <text x="955" y="388" text-anchor="middle" font-size="11" fill="#333">1 2 3 A</text>
+  <text x="955" y="403" text-anchor="middle" font-size="11" fill="#333">4 5 6 B</text>
+  <text x="955" y="418" text-anchor="middle" font-size="11" fill="#333">7 8 9 C</text>
+  <text x="955" y="433" text-anchor="middle" font-size="11" fill="#333">* 0 # D</text>
+  <text x="955" y="452" text-anchor="middle" font-size="9" fill="#2e7d32" font-weight="bold">Rows: GPIO 5, 6, 13, 19</text>
+  <text x="955" y="464" text-anchor="middle" font-size="9" fill="#2e7d32" font-weight="bold">Cols: GPIO 12, 16, 20, 21</text>
+
+  <!-- Wire: Keypad rows to Pi -->
+  <line x1="850" y1="390" x2="695" y2="380" stroke="#2e7d32" stroke-width="2" marker-end="url(#arrow-green)"/>
+  <!-- Wire: Keypad cols to Pi -->
+  <line x1="850" y1="430" x2="695" y2="430" stroke="#2e7d32" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow-green)"/>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- Power Supply (top center) -->
+  <!-- ═══════════════════════════════════════════ -->
+  <rect x="420" y="80" width="260" height="70" rx="10" fill="#fff" stroke="#424242" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="420" y="80" width="260" height="24" rx="10" fill="#424242"/>
+  <rect x="420" y="92" width="260" height="12" fill="#424242"/>
+  <text x="550" y="98" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Power Supply</text>
+  <text x="550" y="122" text-anchor="middle" font-size="11" fill="#333">5V 3A USB-C → Pi</text>
+  <text x="550" y="140" text-anchor="middle" font-size="10" fill="#777">12V supply for door lock relay</text>
+
+  <!-- Wire: Power to Pi -->
+  <line x1="550" y1="150" x2="550" y2="240" stroke="#424242" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- Network / Cloudflare (top right) -->
+  <!-- ═══════════════════════════════════════════ -->
+  <rect x="850" y="80" width="210" height="80" rx="10" fill="#fff" stroke="#f57c00" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="850" y="80" width="210" height="24" rx="10" fill="#f57c00"/>
+  <rect x="850" y="92" width="210" height="12" fill="#f57c00"/>
+  <text x="955" y="98" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Cloudflare Tunnel</text>
+  <text x="955" y="122" text-anchor="middle" font-size="11" fill="#333">padel.hackerman.ge</text>
+  <text x="955" y="138" text-anchor="middle" font-size="10" fill="#f57c00">→ localhost:8000</text>
+  <text x="955" y="153" text-anchor="middle" font-size="10" fill="#777">WiFi / Ethernet</text>
+
+  <!-- Wire: Network to Pi -->
+  <line x1="850" y1="130" x2="720" y2="300" stroke="#f57c00" stroke-width="1.5" stroke-dasharray="8,4" marker-end="url(#arrow)"/>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- Legend -->
+  <!-- ═══════════════════════════════════════════ -->
+  <rect x="30" y="700" width="1040" height="35" rx="6" fill="#e0e0e0"/>
+  <text x="50" y="722" font-size="10" fill="#333" font-weight="bold">Legend:</text>
+  <line x1="110" y1="718" x2="140" y2="718" stroke="#d32f2f" stroke-width="2"/>
+  <text x="145" y="722" font-size="10" fill="#555">Door (12V)</text>
+  <line x1="220" y1="718" x2="250" y2="718" stroke="#e65100" stroke-width="2"/>
+  <text x="255" y="722" font-size="10" fill="#555">Lights (220V)</text>
+  <line x1="340" y1="718" x2="370" y2="718" stroke="#1565c0" stroke-width="2"/>
+  <text x="375" y="722" font-size="10" fill="#555">I2C Display</text>
+  <line x1="460" y1="718" x2="490" y2="718" stroke="#2e7d32" stroke-width="2"/>
+  <text x="495" y="722" font-size="10" fill="#555">Keypad (8 wires)</text>
+  <line x1="600" y1="718" x2="630" y2="718" stroke="#6a1b9a" stroke-width="2"/>
+  <text x="635" y="722" font-size="10" fill="#555">Buzzer (NPN)</text>
+  <line x1="720" y1="718" x2="750" y2="718" stroke="#00695c" stroke-width="2"/>
+  <text x="755" y="722" font-size="10" fill="#555">Exit Button</text>
+  <line x1="850" y1="718" x2="880" y2="718" stroke="#f57c00" stroke-width="1.5" stroke-dasharray="8,4"/>
+  <text x="885" y="722" font-size="10" fill="#555">Network (WiFi/ETH)</text>
+  <line x1="1000" y1="718" x2="1030" y2="718" stroke="#424242" stroke-width="2.5"/>
+  <text x="1035" y="722" font-size="10" fill="#555">Power</text>
+</svg>
