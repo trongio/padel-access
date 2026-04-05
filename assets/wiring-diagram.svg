@@ -1,242 +1,232 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 720" font-family="'Courier New', monospace">
   <defs>
     <filter id="shadow" x="-2%" y="-2%" width="104%" height="104%">
-      <feDropShadow dx="1" dy="1" stdDeviation="2" flood-opacity="0.15"/>
+      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-opacity="0.1"/>
     </filter>
   </defs>
 
   <!-- Background -->
-  <rect width="900" height="720" rx="8" fill="#1a1a2e"/>
+  <rect width="900" height="720" rx="8" fill="#ffffff"/>
 
   <!-- Title -->
-  <text x="450" y="30" text-anchor="middle" font-size="16" font-weight="bold" fill="#e0e0e0" font-family="Arial, sans-serif">Raspberry Pi 4 — Padel Access Control Pinout</text>
+  <text x="450" y="32" text-anchor="middle" font-size="17" font-weight="bold" fill="#1a1a1a" font-family="Arial, sans-serif">Raspberry Pi 4 — Padel Access Control Pinout</text>
+  <text x="450" y="50" text-anchor="middle" font-size="11" fill="#888" font-family="Arial, sans-serif">BCM numbering — All relays active-LOW (GPIO LOW = relay ON)</text>
 
   <!-- Pi Board -->
-  <rect x="200" y="50" width="500" height="590" rx="14" fill="#1b5e20" stroke="#0d3d12" stroke-width="3" filter="url(#shadow)"/>
-  <!-- Board holes -->
-  <circle cx="220" cy="70" r="6" fill="none" stroke="#a5d6a7" stroke-width="1.5"/>
-  <circle cx="680" cy="70" r="6" fill="none" stroke="#a5d6a7" stroke-width="1.5"/>
-  <circle cx="220" cy="620" r="6" fill="none" stroke="#a5d6a7" stroke-width="1.5"/>
-  <circle cx="680" cy="620" r="6" fill="none" stroke="#a5d6a7" stroke-width="1.5"/>
+  <rect x="200" y="62" width="500" height="582" rx="14" fill="#2e7d32" stroke="#1b5e20" stroke-width="2.5" filter="url(#shadow)"/>
 
-  <!-- USB/ETH ports (bottom) -->
-  <rect x="240" y="595" width="50" height="40" rx="3" fill="#333" stroke="#555" stroke-width="1"/>
-  <text x="265" y="618" text-anchor="middle" font-size="7" fill="#999">USB</text>
-  <rect x="300" y="595" width="50" height="40" rx="3" fill="#333" stroke="#555" stroke-width="1"/>
-  <text x="325" y="618" text-anchor="middle" font-size="7" fill="#999">USB</text>
-  <rect x="370" y="595" width="60" height="40" rx="3" fill="#333" stroke="#555" stroke-width="1"/>
-  <text x="400" y="618" text-anchor="middle" font-size="7" fill="#999">ETH</text>
+  <!-- Board holes -->
+  <circle cx="220" cy="82" r="6" fill="none" stroke="#66bb6a" stroke-width="1.5"/>
+  <circle cx="680" cy="82" r="6" fill="none" stroke="#66bb6a" stroke-width="1.5"/>
+  <circle cx="220" cy="624" r="6" fill="none" stroke="#66bb6a" stroke-width="1.5"/>
+  <circle cx="680" cy="624" r="6" fill="none" stroke="#66bb6a" stroke-width="1.5"/>
+
+  <!-- USB/ETH ports -->
+  <rect x="240" y="600" width="50" height="36" rx="3" fill="#555" stroke="#777" stroke-width="1"/>
+  <text x="265" y="622" text-anchor="middle" font-size="7" fill="#ccc">USB</text>
+  <rect x="300" y="600" width="50" height="36" rx="3" fill="#555" stroke="#777" stroke-width="1"/>
+  <text x="325" y="622" text-anchor="middle" font-size="7" fill="#ccc">USB</text>
+  <rect x="370" y="600" width="60" height="36" rx="3" fill="#555" stroke="#777" stroke-width="1"/>
+  <text x="400" y="622" text-anchor="middle" font-size="7" fill="#ccc">ETH</text>
 
   <!-- GPIO Header background -->
-  <rect x="300" y="72" width="300" height="520" rx="6" fill="#0d3d12"/>
+  <rect x="305" y="78" width="290" height="510" rx="5" fill="#1b5e20"/>
 
   <!-- Column headers -->
-  <text x="395" y="90" text-anchor="middle" font-size="9" fill="#a5d6a7" font-weight="bold">Pin#</text>
-  <text x="505" y="90" text-anchor="middle" font-size="9" fill="#a5d6a7" font-weight="bold">Pin#</text>
-  <text x="335" y="90" text-anchor="end" font-size="9" fill="#a5d6a7" font-weight="bold">Function</text>
-  <text x="565" y="90" text-anchor="start" font-size="9" fill="#a5d6a7" font-weight="bold">Function</text>
+  <text x="395" y="94" text-anchor="middle" font-size="9" fill="#a5d6a7" font-weight="bold">Pin#</text>
+  <text x="505" y="94" text-anchor="middle" font-size="9" fill="#a5d6a7" font-weight="bold">Pin#</text>
+  <text x="338" y="94" text-anchor="end" font-size="9" fill="#a5d6a7" font-weight="bold">Function</text>
+  <text x="562" y="94" text-anchor="start" font-size="9" fill="#a5d6a7" font-weight="bold">Function</text>
 
-  <!-- ════════════════════════════════════════════ -->
-  <!-- GPIO PIN ROWS — 40 pins, 20 rows            -->
-  <!-- Left column = odd pins, Right column = even  -->
-  <!-- y starts at 105, increment 25 per row        -->
-  <!-- ════════════════════════════════════════════ -->
+  <!-- ══════════════════════════════════════ -->
+  <!-- 40 GPIO Pins — 20 rows               -->
+  <!-- Left = odd pins, Right = even pins    -->
+  <!-- ══════════════════════════════════════ -->
 
   <!-- Row 1: Pin 1 (3.3V) / Pin 2 (5V) -->
-  <rect x="370" y="98" width="50" height="20" rx="4" fill="#ff8f00"/>
-  <text x="395" y="112" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">1</text>
-  <text x="335" y="112" text-anchor="end" font-size="10" fill="#ffcc80">3.3V</text>
-  <rect x="480" y="98" width="50" height="20" rx="4" fill="#c62828"/>
-  <text x="505" y="112" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">2</text>
-  <text x="565" y="112" text-anchor="start" font-size="10" fill="#ef9a9a">5V</text>
+  <rect x="370" y="100" width="50" height="20" rx="4" fill="#ff8f00"/>
+  <text x="395" y="114" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">1</text>
+  <text x="338" y="114" text-anchor="end" font-size="10" fill="#ff8f00" font-weight="bold">3.3V</text>
+  <rect x="480" y="100" width="50" height="20" rx="4" fill="#c62828"/>
+  <text x="505" y="114" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">2</text>
+  <text x="562" y="114" text-anchor="start" font-size="10" fill="#c62828" font-weight="bold">5V</text>
 
   <!-- Row 2: Pin 3 (GPIO2 SDA) / Pin 4 (5V) -->
-  <rect x="370" y="123" width="50" height="20" rx="4" fill="#1565c0"/>
-  <text x="395" y="137" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">3</text>
-  <text x="335" y="137" text-anchor="end" font-size="10" fill="#90caf9">GPIO2 SDA</text>
-  <rect x="480" y="123" width="50" height="20" rx="4" fill="#c62828"/>
-  <text x="505" y="137" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">4</text>
-  <text x="565" y="137" text-anchor="start" font-size="10" fill="#ef9a9a">5V</text>
+  <rect x="370" y="124" width="50" height="20" rx="4" fill="#1565c0"/>
+  <text x="395" y="138" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">3</text>
+  <text x="338" y="138" text-anchor="end" font-size="10" fill="#1565c0" font-weight="bold">GPIO2 SDA</text>
+  <rect x="480" y="124" width="50" height="20" rx="4" fill="#c62828"/>
+  <text x="505" y="138" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">4</text>
+  <text x="562" y="138" text-anchor="start" font-size="10" fill="#c62828" font-weight="bold">5V</text>
 
   <!-- Row 3: Pin 5 (GPIO3 SCL) / Pin 6 (GND) -->
   <rect x="370" y="148" width="50" height="20" rx="4" fill="#1565c0"/>
   <text x="395" y="162" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">5</text>
-  <text x="335" y="162" text-anchor="end" font-size="10" fill="#90caf9">GPIO3 SCL</text>
-  <rect x="480" y="148" width="50" height="20" rx="4" fill="#212121"/>
+  <text x="338" y="162" text-anchor="end" font-size="10" fill="#1565c0" font-weight="bold">GPIO3 SCL</text>
+  <rect x="480" y="148" width="50" height="20" rx="4" fill="#333"/>
   <text x="505" y="162" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">6</text>
-  <text x="565" y="162" text-anchor="start" font-size="10" fill="#9e9e9e">GND</text>
+  <text x="562" y="162" text-anchor="start" font-size="10" fill="#555">GND</text>
 
   <!-- Row 4: Pin 7 (GPIO4) / Pin 8 (GPIO14) -->
-  <rect x="370" y="173" width="50" height="20" rx="4" fill="#424242"/>
-  <text x="395" y="187" text-anchor="middle" font-size="10" fill="#bbb" font-weight="bold">7</text>
-  <text x="335" y="187" text-anchor="end" font-size="10" fill="#757575">GPIO4</text>
-  <rect x="480" y="173" width="50" height="20" rx="4" fill="#424242"/>
-  <text x="505" y="187" text-anchor="middle" font-size="10" fill="#bbb" font-weight="bold">8</text>
-  <text x="565" y="187" text-anchor="start" font-size="10" fill="#757575">GPIO14</text>
+  <rect x="370" y="172" width="50" height="20" rx="4" fill="#e0e0e0" stroke="#bbb" stroke-width="0.5"/>
+  <text x="395" y="186" text-anchor="middle" font-size="10" fill="#666" font-weight="bold">7</text>
+  <text x="338" y="186" text-anchor="end" font-size="10" fill="#999">GPIO4</text>
+  <rect x="480" y="172" width="50" height="20" rx="4" fill="#e0e0e0" stroke="#bbb" stroke-width="0.5"/>
+  <text x="505" y="186" text-anchor="middle" font-size="10" fill="#666" font-weight="bold">8</text>
+  <text x="562" y="186" text-anchor="start" font-size="10" fill="#999">GPIO14</text>
 
   <!-- Row 5: Pin 9 (GND) / Pin 10 (GPIO15) -->
-  <rect x="370" y="198" width="50" height="20" rx="4" fill="#212121"/>
-  <text x="395" y="212" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">9</text>
-  <text x="335" y="212" text-anchor="end" font-size="10" fill="#9e9e9e">GND</text>
-  <rect x="480" y="198" width="50" height="20" rx="4" fill="#424242"/>
-  <text x="505" y="212" text-anchor="middle" font-size="10" fill="#bbb" font-weight="bold">10</text>
-  <text x="565" y="212" text-anchor="start" font-size="10" fill="#757575">GPIO15</text>
+  <rect x="370" y="196" width="50" height="20" rx="4" fill="#333"/>
+  <text x="395" y="210" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">9</text>
+  <text x="338" y="210" text-anchor="end" font-size="10" fill="#555">GND</text>
+  <rect x="480" y="196" width="50" height="20" rx="4" fill="#e0e0e0" stroke="#bbb" stroke-width="0.5"/>
+  <text x="505" y="210" text-anchor="middle" font-size="10" fill="#666" font-weight="bold">10</text>
+  <text x="562" y="210" text-anchor="start" font-size="10" fill="#999">GPIO15</text>
 
-  <!-- Row 6: Pin 11 (GPIO17) / Pin 12 (GPIO18) -->
-  <rect x="370" y="223" width="50" height="20" rx="4" fill="#d32f2f"/>
-  <text x="395" y="237" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">11</text>
-  <text x="335" y="237" text-anchor="end" font-size="10" fill="#ef5350" font-weight="bold">GPIO17 DOOR</text>
-  <rect x="480" y="223" width="50" height="20" rx="4" fill="#424242"/>
-  <text x="505" y="237" text-anchor="middle" font-size="10" fill="#bbb" font-weight="bold">12</text>
-  <text x="565" y="237" text-anchor="start" font-size="10" fill="#757575">GPIO18</text>
+  <!-- Row 6: Pin 11 (GPIO17 DOOR) / Pin 12 (GPIO18) -->
+  <rect x="370" y="220" width="50" height="20" rx="4" fill="#d32f2f"/>
+  <text x="395" y="234" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">11</text>
+  <text x="338" y="234" text-anchor="end" font-size="10" fill="#d32f2f" font-weight="bold">GPIO17 DOOR</text>
+  <rect x="480" y="220" width="50" height="20" rx="4" fill="#e0e0e0" stroke="#bbb" stroke-width="0.5"/>
+  <text x="505" y="234" text-anchor="middle" font-size="10" fill="#666" font-weight="bold">12</text>
+  <text x="562" y="234" text-anchor="start" font-size="10" fill="#999">GPIO18</text>
 
-  <!-- Row 7: Pin 13 (GPIO27) / Pin 14 (GND) -->
-  <rect x="370" y="248" width="50" height="20" rx="4" fill="#e65100"/>
-  <text x="395" y="262" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">13</text>
-  <text x="335" y="262" text-anchor="end" font-size="10" fill="#ff9800" font-weight="bold">GPIO27 LIGHT1</text>
-  <rect x="480" y="248" width="50" height="20" rx="4" fill="#212121"/>
-  <text x="505" y="262" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">14</text>
-  <text x="565" y="262" text-anchor="start" font-size="10" fill="#9e9e9e">GND</text>
+  <!-- Row 7: Pin 13 (GPIO27 LIGHT1) / Pin 14 (GND) -->
+  <rect x="370" y="244" width="50" height="20" rx="4" fill="#e65100"/>
+  <text x="395" y="258" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">13</text>
+  <text x="338" y="258" text-anchor="end" font-size="10" fill="#e65100" font-weight="bold">GPIO27 LIGHT1</text>
+  <rect x="480" y="244" width="50" height="20" rx="4" fill="#333"/>
+  <text x="505" y="258" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">14</text>
+  <text x="562" y="258" text-anchor="start" font-size="10" fill="#555">GND</text>
 
-  <!-- Row 8: Pin 15 (GPIO22) / Pin 16 (GPIO23) -->
-  <rect x="370" y="273" width="50" height="20" rx="4" fill="#e65100"/>
-  <text x="395" y="287" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">15</text>
-  <text x="335" y="287" text-anchor="end" font-size="10" fill="#ff9800" font-weight="bold">GPIO22 LIGHT2</text>
-  <rect x="480" y="273" width="50" height="20" rx="4" fill="#424242"/>
-  <text x="505" y="287" text-anchor="middle" font-size="10" fill="#bbb" font-weight="bold">16</text>
-  <text x="565" y="287" text-anchor="start" font-size="10" fill="#757575">GPIO23</text>
+  <!-- Row 8: Pin 15 (GPIO22 LIGHT2) / Pin 16 (GPIO23) -->
+  <rect x="370" y="268" width="50" height="20" rx="4" fill="#e65100"/>
+  <text x="395" y="282" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">15</text>
+  <text x="338" y="282" text-anchor="end" font-size="10" fill="#e65100" font-weight="bold">GPIO22 LIGHT2</text>
+  <rect x="480" y="268" width="50" height="20" rx="4" fill="#e0e0e0" stroke="#bbb" stroke-width="0.5"/>
+  <text x="505" y="282" text-anchor="middle" font-size="10" fill="#666" font-weight="bold">16</text>
+  <text x="562" y="282" text-anchor="start" font-size="10" fill="#999">GPIO23</text>
 
-  <!-- Row 9: Pin 17 (3.3V) / Pin 18 (GPIO24) -->
-  <rect x="370" y="298" width="50" height="20" rx="4" fill="#ff8f00"/>
-  <text x="395" y="312" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">17</text>
-  <text x="335" y="312" text-anchor="end" font-size="10" fill="#ffcc80">3.3V</text>
-  <rect x="480" y="298" width="50" height="20" rx="4" fill="#6a1b9a"/>
-  <text x="505" y="312" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">18</text>
-  <text x="565" y="312" text-anchor="start" font-size="10" fill="#ce93d8" font-weight="bold">GPIO24 BUZZER</text>
+  <!-- Row 9: Pin 17 (3.3V) / Pin 18 (GPIO24 BUZZER) -->
+  <rect x="370" y="292" width="50" height="20" rx="4" fill="#ff8f00"/>
+  <text x="395" y="306" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">17</text>
+  <text x="338" y="306" text-anchor="end" font-size="10" fill="#ff8f00" font-weight="bold">3.3V</text>
+  <rect x="480" y="292" width="50" height="20" rx="4" fill="#6a1b9a"/>
+  <text x="505" y="306" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">18</text>
+  <text x="562" y="306" text-anchor="start" font-size="10" fill="#6a1b9a" font-weight="bold">GPIO24 BUZZER</text>
 
   <!-- Row 10: Pin 19 (GPIO10) / Pin 20 (GND) -->
-  <rect x="370" y="323" width="50" height="20" rx="4" fill="#424242"/>
-  <text x="395" y="337" text-anchor="middle" font-size="10" fill="#bbb" font-weight="bold">19</text>
-  <text x="335" y="337" text-anchor="end" font-size="10" fill="#757575">GPIO10</text>
-  <rect x="480" y="323" width="50" height="20" rx="4" fill="#212121"/>
-  <text x="505" y="337" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">20</text>
-  <text x="565" y="337" text-anchor="start" font-size="10" fill="#9e9e9e">GND</text>
+  <rect x="370" y="316" width="50" height="20" rx="4" fill="#e0e0e0" stroke="#bbb" stroke-width="0.5"/>
+  <text x="395" y="330" text-anchor="middle" font-size="10" fill="#666" font-weight="bold">19</text>
+  <text x="338" y="330" text-anchor="end" font-size="10" fill="#999">GPIO10</text>
+  <rect x="480" y="316" width="50" height="20" rx="4" fill="#333"/>
+  <text x="505" y="330" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">20</text>
+  <text x="562" y="330" text-anchor="start" font-size="10" fill="#555">GND</text>
 
   <!-- Row 11: Pin 21 (GPIO9) / Pin 22 (GPIO25) -->
-  <rect x="370" y="348" width="50" height="20" rx="4" fill="#424242"/>
-  <text x="395" y="362" text-anchor="middle" font-size="10" fill="#bbb" font-weight="bold">21</text>
-  <text x="335" y="362" text-anchor="end" font-size="10" fill="#757575">GPIO9</text>
-  <rect x="480" y="348" width="50" height="20" rx="4" fill="#424242"/>
-  <text x="505" y="362" text-anchor="middle" font-size="10" fill="#bbb" font-weight="bold">22</text>
-  <text x="565" y="362" text-anchor="start" font-size="10" fill="#757575">GPIO25</text>
+  <rect x="370" y="340" width="50" height="20" rx="4" fill="#e0e0e0" stroke="#bbb" stroke-width="0.5"/>
+  <text x="395" y="354" text-anchor="middle" font-size="10" fill="#666" font-weight="bold">21</text>
+  <text x="338" y="354" text-anchor="end" font-size="10" fill="#999">GPIO9</text>
+  <rect x="480" y="340" width="50" height="20" rx="4" fill="#e0e0e0" stroke="#bbb" stroke-width="0.5"/>
+  <text x="505" y="354" text-anchor="middle" font-size="10" fill="#666" font-weight="bold">22</text>
+  <text x="562" y="354" text-anchor="start" font-size="10" fill="#999">GPIO25</text>
 
   <!-- Row 12: Pin 23 (GPIO11) / Pin 24 (GPIO8) -->
-  <rect x="370" y="373" width="50" height="20" rx="4" fill="#424242"/>
-  <text x="395" y="387" text-anchor="middle" font-size="10" fill="#bbb" font-weight="bold">23</text>
-  <text x="335" y="387" text-anchor="end" font-size="10" fill="#757575">GPIO11</text>
-  <rect x="480" y="373" width="50" height="20" rx="4" fill="#424242"/>
-  <text x="505" y="387" text-anchor="middle" font-size="10" fill="#bbb" font-weight="bold">24</text>
-  <text x="565" y="387" text-anchor="start" font-size="10" fill="#757575">GPIO8</text>
+  <rect x="370" y="364" width="50" height="20" rx="4" fill="#e0e0e0" stroke="#bbb" stroke-width="0.5"/>
+  <text x="395" y="378" text-anchor="middle" font-size="10" fill="#666" font-weight="bold">23</text>
+  <text x="338" y="378" text-anchor="end" font-size="10" fill="#999">GPIO11</text>
+  <rect x="480" y="364" width="50" height="20" rx="4" fill="#e0e0e0" stroke="#bbb" stroke-width="0.5"/>
+  <text x="505" y="378" text-anchor="middle" font-size="10" fill="#666" font-weight="bold">24</text>
+  <text x="562" y="378" text-anchor="start" font-size="10" fill="#999">GPIO8</text>
 
   <!-- Row 13: Pin 25 (GND) / Pin 26 (GPIO7) -->
-  <rect x="370" y="398" width="50" height="20" rx="4" fill="#212121"/>
-  <text x="395" y="412" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">25</text>
-  <text x="335" y="412" text-anchor="end" font-size="10" fill="#9e9e9e">GND</text>
-  <rect x="480" y="398" width="50" height="20" rx="4" fill="#424242"/>
-  <text x="505" y="412" text-anchor="middle" font-size="10" fill="#bbb" font-weight="bold">26</text>
-  <text x="565" y="412" text-anchor="start" font-size="10" fill="#757575">GPIO7</text>
+  <rect x="370" y="388" width="50" height="20" rx="4" fill="#333"/>
+  <text x="395" y="402" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">25</text>
+  <text x="338" y="402" text-anchor="end" font-size="10" fill="#555">GND</text>
+  <rect x="480" y="388" width="50" height="20" rx="4" fill="#e0e0e0" stroke="#bbb" stroke-width="0.5"/>
+  <text x="505" y="402" text-anchor="middle" font-size="10" fill="#666" font-weight="bold">26</text>
+  <text x="562" y="402" text-anchor="start" font-size="10" fill="#999">GPIO7</text>
 
-  <!-- Row 14: Pin 27 (GPIO0) / Pin 28 (GPIO1) -->
-  <rect x="370" y="423" width="50" height="20" rx="4" fill="#424242"/>
-  <text x="395" y="437" text-anchor="middle" font-size="10" fill="#bbb" font-weight="bold">27</text>
-  <text x="335" y="437" text-anchor="end" font-size="10" fill="#757575">GPIO0</text>
-  <rect x="480" y="423" width="50" height="20" rx="4" fill="#424242"/>
-  <text x="505" y="437" text-anchor="middle" font-size="10" fill="#bbb" font-weight="bold">28</text>
-  <text x="565" y="437" text-anchor="start" font-size="10" fill="#757575">GPIO1</text>
+  <!-- Row 14: Pin 27 (GPIO0 ID_SD) / Pin 28 (GPIO1 ID_SC) -->
+  <rect x="370" y="412" width="50" height="20" rx="4" fill="#e0e0e0" stroke="#bbb" stroke-width="0.5"/>
+  <text x="395" y="426" text-anchor="middle" font-size="10" fill="#666" font-weight="bold">27</text>
+  <text x="338" y="426" text-anchor="end" font-size="10" fill="#999">ID_SD</text>
+  <rect x="480" y="412" width="50" height="20" rx="4" fill="#e0e0e0" stroke="#bbb" stroke-width="0.5"/>
+  <text x="505" y="426" text-anchor="middle" font-size="10" fill="#666" font-weight="bold">28</text>
+  <text x="562" y="426" text-anchor="start" font-size="10" fill="#999">ID_SC</text>
 
-  <!-- Row 15: Pin 29 (GPIO5) / Pin 30 (GND) -->
-  <rect x="370" y="448" width="50" height="20" rx="4" fill="#2e7d32"/>
-  <text x="395" y="462" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">29</text>
-  <text x="335" y="462" text-anchor="end" font-size="10" fill="#66bb6a" font-weight="bold">GPIO5 ROW1</text>
-  <rect x="480" y="448" width="50" height="20" rx="4" fill="#212121"/>
-  <text x="505" y="462" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">30</text>
-  <text x="565" y="462" text-anchor="start" font-size="10" fill="#9e9e9e">GND</text>
+  <!-- Row 15: Pin 29 (GPIO5 ROW1) / Pin 30 (GND) -->
+  <rect x="370" y="436" width="50" height="20" rx="4" fill="#2e7d32"/>
+  <text x="395" y="450" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">29</text>
+  <text x="338" y="450" text-anchor="end" font-size="10" fill="#2e7d32" font-weight="bold">GPIO5 ROW1</text>
+  <rect x="480" y="436" width="50" height="20" rx="4" fill="#333"/>
+  <text x="505" y="450" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">30</text>
+  <text x="562" y="450" text-anchor="start" font-size="10" fill="#555">GND</text>
 
-  <!-- Row 16: Pin 31 (GPIO6) / Pin 32 (GPIO12) -->
-  <rect x="370" y="473" width="50" height="20" rx="4" fill="#2e7d32"/>
-  <text x="395" y="487" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">31</text>
-  <text x="335" y="487" text-anchor="end" font-size="10" fill="#66bb6a" font-weight="bold">GPIO6 ROW2</text>
-  <rect x="480" y="473" width="50" height="20" rx="4" fill="#00897b"/>
-  <text x="505" y="487" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">32</text>
-  <text x="565" y="487" text-anchor="start" font-size="10" fill="#80cbc4" font-weight="bold">GPIO12 COL1</text>
+  <!-- Row 16: Pin 31 (GPIO6 ROW2) / Pin 32 (GPIO12 COL1) -->
+  <rect x="370" y="460" width="50" height="20" rx="4" fill="#2e7d32"/>
+  <text x="395" y="474" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">31</text>
+  <text x="338" y="474" text-anchor="end" font-size="10" fill="#2e7d32" font-weight="bold">GPIO6 ROW2</text>
+  <rect x="480" y="460" width="50" height="20" rx="4" fill="#00897b"/>
+  <text x="505" y="474" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">32</text>
+  <text x="562" y="474" text-anchor="start" font-size="10" fill="#00897b" font-weight="bold">GPIO12 COL1</text>
 
-  <!-- Row 17: Pin 33 (GPIO13) / Pin 34 (GND) -->
-  <rect x="370" y="498" width="50" height="20" rx="4" fill="#2e7d32"/>
-  <text x="395" y="512" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">33</text>
-  <text x="335" y="512" text-anchor="end" font-size="10" fill="#66bb6a" font-weight="bold">GPIO13 ROW3</text>
-  <rect x="480" y="498" width="50" height="20" rx="4" fill="#212121"/>
-  <text x="505" y="512" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">34</text>
-  <text x="565" y="512" text-anchor="start" font-size="10" fill="#9e9e9e">GND</text>
+  <!-- Row 17: Pin 33 (GPIO13 ROW3) / Pin 34 (GND) -->
+  <rect x="370" y="484" width="50" height="20" rx="4" fill="#2e7d32"/>
+  <text x="395" y="498" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">33</text>
+  <text x="338" y="498" text-anchor="end" font-size="10" fill="#2e7d32" font-weight="bold">GPIO13 ROW3</text>
+  <rect x="480" y="484" width="50" height="20" rx="4" fill="#333"/>
+  <text x="505" y="498" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">34</text>
+  <text x="562" y="498" text-anchor="start" font-size="10" fill="#555">GND</text>
 
-  <!-- Row 18: Pin 35 (GPIO19) / Pin 36 (GPIO16) -->
-  <rect x="370" y="523" width="50" height="20" rx="4" fill="#2e7d32"/>
-  <text x="395" y="537" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">35</text>
-  <text x="335" y="537" text-anchor="end" font-size="10" fill="#66bb6a" font-weight="bold">GPIO19 ROW4</text>
-  <rect x="480" y="523" width="50" height="20" rx="4" fill="#00897b"/>
-  <text x="505" y="537" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">36</text>
-  <text x="565" y="537" text-anchor="start" font-size="10" fill="#80cbc4" font-weight="bold">GPIO16 COL2</text>
+  <!-- Row 18: Pin 35 (GPIO19 ROW4) / Pin 36 (GPIO16 COL2) -->
+  <rect x="370" y="508" width="50" height="20" rx="4" fill="#2e7d32"/>
+  <text x="395" y="522" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">35</text>
+  <text x="338" y="522" text-anchor="end" font-size="10" fill="#2e7d32" font-weight="bold">GPIO19 ROW4</text>
+  <rect x="480" y="508" width="50" height="20" rx="4" fill="#00897b"/>
+  <text x="505" y="522" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">36</text>
+  <text x="562" y="522" text-anchor="start" font-size="10" fill="#00897b" font-weight="bold">GPIO16 COL2</text>
 
-  <!-- Row 19: Pin 37 (GPIO26) / Pin 38 (GPIO20) -->
-  <rect x="370" y="548" width="50" height="20" rx="4" fill="#00695c"/>
-  <text x="395" y="562" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">37</text>
-  <text x="335" y="562" text-anchor="end" font-size="10" fill="#4db6ac" font-weight="bold">GPIO26 EXIT BTN</text>
-  <rect x="480" y="548" width="50" height="20" rx="4" fill="#00897b"/>
-  <text x="505" y="562" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">38</text>
-  <text x="565" y="562" text-anchor="start" font-size="10" fill="#80cbc4" font-weight="bold">GPIO20 COL3</text>
+  <!-- Row 19: Pin 37 (GPIO26 EXIT) / Pin 38 (GPIO20 COL3) -->
+  <rect x="370" y="532" width="50" height="20" rx="4" fill="#00695c"/>
+  <text x="395" y="546" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">37</text>
+  <text x="338" y="546" text-anchor="end" font-size="10" fill="#00695c" font-weight="bold">GPIO26 EXIT BTN</text>
+  <rect x="480" y="532" width="50" height="20" rx="4" fill="#00897b"/>
+  <text x="505" y="546" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">38</text>
+  <text x="562" y="546" text-anchor="start" font-size="10" fill="#00897b" font-weight="bold">GPIO20 COL3</text>
 
-  <!-- Row 20: Pin 39 (GND) / Pin 40 (GPIO21) -->
-  <rect x="370" y="573" width="50" height="20" rx="4" fill="#212121"/>
-  <text x="395" y="587" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">39</text>
-  <text x="335" y="587" text-anchor="end" font-size="10" fill="#9e9e9e">GND</text>
-  <rect x="480" y="573" width="50" height="20" rx="4" fill="#00897b"/>
-  <text x="505" y="587" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">40</text>
-  <text x="565" y="587" text-anchor="start" font-size="10" fill="#80cbc4" font-weight="bold">GPIO21 COL4</text>
+  <!-- Row 20: Pin 39 (GND) / Pin 40 (GPIO21 COL4) -->
+  <rect x="370" y="556" width="50" height="20" rx="4" fill="#333"/>
+  <text x="395" y="570" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">39</text>
+  <text x="338" y="570" text-anchor="end" font-size="10" fill="#555">GND</text>
+  <rect x="480" y="556" width="50" height="20" rx="4" fill="#00897b"/>
+  <text x="505" y="570" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">40</text>
+  <text x="562" y="570" text-anchor="start" font-size="10" fill="#00897b" font-weight="bold">GPIO21 COL4</text>
 
-  <!-- ════════════════════════════════════════════ -->
+  <!-- ════════════════════════════════════════ -->
   <!-- Legend -->
-  <!-- ════════════════════════════════════════════ -->
-  <rect x="30" y="660" width="840" height="50" rx="8" fill="#16213e"/>
+  <!-- ════════════════════════════════════════ -->
+  <rect x="30" y="655" width="840" height="55" rx="8" fill="#f5f5f5" stroke="#ddd" stroke-width="1"/>
+  <text x="450" y="672" text-anchor="middle" font-size="11" fill="#333" font-weight="bold" font-family="Arial, sans-serif">Legend</text>
 
-  <rect x="50" y="673" width="14" height="14" rx="3" fill="#d32f2f"/>
-  <text x="70" y="685" font-size="10" fill="#ef9a9a" font-family="Arial">Door Relay</text>
+  <rect x="55" y="682" width="14" height="14" rx="3" fill="#d32f2f"/>
+  <text x="75" y="694" font-size="10" fill="#333" font-family="Arial">Door Relay (12V)</text>
 
-  <rect x="145" y="673" width="14" height="14" rx="3" fill="#e65100"/>
-  <text x="165" y="685" font-size="10" fill="#ffcc80" font-family="Arial">Light Relays</text>
+  <rect x="185" y="682" width="14" height="14" rx="3" fill="#e65100"/>
+  <text x="205" y="694" font-size="10" fill="#333" font-family="Arial">Light Relays (220V)</text>
 
-  <rect x="250" y="673" width="14" height="14" rx="3" fill="#1565c0"/>
-  <text x="270" y="685" font-size="10" fill="#90caf9" font-family="Arial">OLED I2C</text>
+  <rect x="335" y="682" width="14" height="14" rx="3" fill="#1565c0"/>
+  <text x="355" y="694" font-size="10" fill="#333" font-family="Arial">OLED I2C</text>
 
-  <rect x="340" y="673" width="14" height="14" rx="3" fill="#2e7d32"/>
-  <text x="360" y="685" font-size="10" fill="#66bb6a" font-family="Arial">Keypad Rows</text>
+  <rect x="430" y="682" width="14" height="14" rx="3" fill="#6a1b9a"/>
+  <text x="450" y="694" font-size="10" fill="#333" font-family="Arial">Buzzer</text>
 
-  <rect x="445" y="673" width="14" height="14" rx="3" fill="#00897b"/>
-  <text x="465" y="685" font-size="10" fill="#80cbc4" font-family="Arial">Keypad Cols</text>
+  <rect x="510" y="682" width="14" height="14" rx="3" fill="#2e7d32"/>
+  <text x="530" y="694" font-size="10" fill="#333" font-family="Arial">Keypad Rows</text>
 
-  <rect x="550" y="673" width="14" height="14" rx="3" fill="#6a1b9a"/>
-  <text x="570" y="685" font-size="10" fill="#ce93d8" font-family="Arial">Buzzer</text>
+  <rect x="625" y="682" width="14" height="14" rx="3" fill="#00897b"/>
+  <text x="645" y="694" font-size="10" fill="#333" font-family="Arial">Keypad Cols</text>
 
-  <rect x="630" y="673" width="14" height="14" rx="3" fill="#00695c"/>
-  <text x="650" y="685" font-size="10" fill="#4db6ac" font-family="Arial">Exit Button</text>
-
-  <rect x="740" y="673" width="14" height="14" rx="3" fill="#212121" stroke="#9e9e9e" stroke-width="1"/>
-  <text x="760" y="685" font-size="10" fill="#9e9e9e" font-family="Arial">GND</text>
-
-  <rect x="800" y="673" width="14" height="14" rx="3" fill="#ff8f00"/>
-  <text x="820" y="685" font-size="10" fill="#ffcc80" font-family="Arial">3.3V</text>
-
-  <rect x="50" y="695" width="14" height="14" rx="3" fill="#c62828"/>
-  <text x="70" y="707" font-size="10" fill="#ef9a9a" font-family="Arial">5V</text>
-
-  <rect x="110" y="695" width="14" height="14" rx="3" fill="#424242"/>
-  <text x="130" y="707" font-size="10" fill="#757575" font-family="Arial">Unused</text>
+  <rect x="730" y="682" width="14" height="14" rx="3" fill="#00695c"/>
+  <text x="750" y="694" font-size="10" fill="#333" font-family="Arial">Exit Button</text>
 </svg>

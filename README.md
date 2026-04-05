@@ -18,6 +18,10 @@ Raspberry Pi 4 (Ubuntu Server 24) based access control for a padel facility. Con
 
 ## Hardware Wiring
 
+<p align="center">
+  <img src="assets/wiring-diagram.svg" alt="Raspberry Pi GPIO Pinout" width="700"/>
+</p>
+
 | # | Item | Connection | Purpose |
 |---|------|------------|---------|
 | 1 | 1-Ch 5V Relay Module (AR0310) | GPIO 17 | Door lock — 12V |
