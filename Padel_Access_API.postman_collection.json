@@ -143,6 +143,19 @@
 					}
 				},
 				{
+					"name": "Check Code Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/codes/check/1234",
+							"host": ["{{base_url}}"],
+							"path": ["api", "codes", "check", "1234"]
+						},
+						"description": "Look up a code by its value and get its current status.\n\nReplace `1234` with the actual code to check.\n\n**Possible statuses:**\n- `active` — Code is valid and ready to use\n- `not_yet_valid` — Code exists but validity window hasn't started\n- `expired` — Validity window has passed\n- `used` — One-time code already used\n- `inactive` — Code was deactivated\n- `not_found` — Code doesn't exist\n\nAlso returns `uses_remaining` for limited-use codes."
+					}
+				},
+				{
 					"name": "Get Single Code",
 					"request": {
 						"method": "GET",

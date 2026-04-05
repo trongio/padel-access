@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 
 from app.core.database import get_session, log_event
-from app.core.models import AccessCode, AccessCodeCreate, AccessCodeGenerate, AccessCodeRead, AccessCodeUpdate
+from app.core.models import AccessCode, AccessCodeCreate, AccessCodeGenerate, AccessCodeRead, AccessCodeStatus, AccessCodeUpdate
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -114,6 +114,43 @@ def list_codes(
         statement = statement.where(AccessCode.is_active == True)  # noqa: E712
     codes = session.exec(statement).all()
     return [_to_read(ac) for ac in codes]
+
+
+@router.get("/check/{code}", response_model=AccessCodeStatus)
+def check_code(code: str, session: Session = Depends(get_session)):
+    ac = session.exec(select(AccessCode).where(AccessCode.code == code)).first()
+    if not ac:
+        return AccessCodeStatus(code=code, status="not_found")
+
+    now = datetime.now(timezone.utc)
+
+    if not ac.is_active:
+        if ac.max_uses is not None and ac.use_count >= ac.max_uses:
+            status = "used"
+        else:
+            status = "inactive"
+    elif now < ac.valid_from:
+        status = "not_yet_valid"
+    elif now > ac.valid_until:
+        status = "expired"
+    else:
+        status = "active"
+
+    uses_remaining = None
+    if ac.max_uses is not None:
+        uses_remaining = max(0, ac.max_uses - ac.use_count)
+
+    return AccessCodeStatus(
+        code=ac.code,
+        status=status,
+        label=ac.label,
+        light_ids=ac.light_ids_list,
+        valid_from=ac.valid_from,
+        valid_until=ac.valid_until,
+        max_uses=ac.max_uses,
+        use_count=ac.use_count,
+        uses_remaining=uses_remaining,
+    )
 
 
 @router.get("/{code_id}", response_model=AccessCodeRead)

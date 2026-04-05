@@ -87,6 +87,18 @@ class AccessCodeRead(SQLModel):
     created_at: datetime
 
 
+class AccessCodeStatus(SQLModel):
+    code: str
+    status: str  # "active", "expired", "used", "inactive", "not_yet_valid", "not_found"
+    label: Optional[str] = None
+    light_ids: list[int] = []
+    valid_from: Optional[datetime] = None
+    valid_until: Optional[datetime] = None
+    max_uses: Optional[int] = None
+    use_count: int = 0
+    uses_remaining: Optional[int] = None  # None = unlimited
+
+
 class AuditLogRead(SQLModel):
     id: int
     event: str
