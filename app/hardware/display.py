@@ -17,39 +17,54 @@ class DisplayManager:
     """Queue-based OLED display manager. All I2C writes run on a single thread."""
 
     def __init__(self) -> None:
-        serial = i2c(port=1, address=0x3C)
-        self._device = ssd1306(serial)
-        self._font = ImageFont.load_default()
+        self._available = False
         self._queue: queue.Queue[dict | None] = queue.Queue()
         self._running = True
         self._return_timer: threading.Timer | None = None
         self._tz = ZoneInfo(config.TZ)
 
-        self._thread = threading.Thread(target=self._run, daemon=True)
-        self._thread.start()
-        logger.info("Display initialized (128x64 SSD1306)")
+        try:
+            serial = i2c(port=1, address=0x3C)
+            self._device = ssd1306(serial)
+            self._font = ImageFont.load_default()
+            self._available = True
+            self._thread = threading.Thread(target=self._run, daemon=True)
+            self._thread.start()
+            logger.info("Display initialized (128x64 SSD1306)")
+        except Exception:
+            logger.warning("OLED display not found — running without display")
 
     # ─── Public API (non-blocking, enqueue only) ──
 
     def show_idle(self) -> None:
+        if not self._available:
+            return
         self._cancel_timer()
         self._queue.put({"type": "idle"})
 
     def show_input(self, masked: str) -> None:
+        if not self._available:
+            return
         self._cancel_timer()
         self._queue.put({"type": "input", "masked": masked})
 
     def show_success(self, valid_until: datetime) -> None:
+        if not self._available:
+            return
         self._cancel_timer()
         self._queue.put({"type": "success", "until": valid_until})
         self._schedule_return(3.0)
 
     def show_error(self, message: str, duration: float = 3.0) -> None:
+        if not self._available:
+            return
         self._cancel_timer()
         self._queue.put({"type": "error", "message": message})
         self._schedule_return(duration)
 
     def show_message(self, line1: str, line2: str = "", duration: float | None = None) -> None:
+        if not self._available:
+            return
         self._cancel_timer()
         self._queue.put({"type": "message", "line1": line1, "line2": line2})
         if duration is not None:
@@ -58,6 +73,8 @@ class DisplayManager:
     def shutdown(self) -> None:
         self._cancel_timer()
         self._running = False
+        if not self._available:
+            return
         self._queue.put(None)  # sentinel to unblock
         self._thread.join(timeout=2)
         try:
