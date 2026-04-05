@@ -14,6 +14,8 @@ from app import config
 logger = logging.getLogger(__name__)
 
 _CLOCK_REFRESH = 1.0  # seconds between idle clock updates
+_FONT_DIR = config._BASE_DIR / "assets" / "fonts"
+_FONT_FILE = _FONT_DIR / "NotoSansGeorgian.ttf"
 
 
 class DisplayManager:
@@ -30,7 +32,17 @@ class DisplayManager:
         try:
             serial = i2c(port=1, address=0x3C)
             self._device = ssd1306(serial)
-            self._font = ImageFont.load_default()
+            # Load Georgian-capable font at multiple sizes
+            if _FONT_FILE.exists():
+                self._font_sm = ImageFont.truetype(str(_FONT_FILE), 12)
+                self._font_md = ImageFont.truetype(str(_FONT_FILE), 14)
+                self._font_lg = ImageFont.truetype(str(_FONT_FILE), 22)
+                logger.info("Loaded NotoSansGeorgian font")
+            else:
+                self._font_sm = ImageFont.load_default()
+                self._font_md = ImageFont.load_default()
+                self._font_lg = ImageFont.load_default()
+                logger.warning("Georgian font not found, using default")
             self._available = True
             self._thread = threading.Thread(target=self._run, daemon=True)
             self._thread.start()
@@ -131,66 +143,37 @@ class DisplayManager:
 
         self._device.display(img)
 
+    def _center(self, draw: ImageDraw.ImageDraw, text: str, y: int, font) -> None:
+        bbox = draw.textbbox((0, 0), text, font=font)
+        w = bbox[2] - bbox[0]
+        draw.text(((128 - w) // 2, y), text, fill=1, font=font)
+
     def _draw_idle(self, draw: ImageDraw.ImageDraw) -> None:
         now = datetime.now(self._tz)
-        title = config.DISPLAY_IDLE_TEXT
-
-        # Title at top
-        bbox = draw.textbbox((0, 0), title, font=self._font)
-        w = bbox[2] - bbox[0]
-        x = (128 - w) // 2
-        draw.text((x, 4), title, fill=1, font=self._font)
-
-        # Time (large, centered)
-        time_str = now.strftime("%H:%M:%S")
-        bbox = draw.textbbox((0, 0), time_str, font=self._font)
-        w = bbox[2] - bbox[0]
-        x = (128 - w) // 2
-        draw.text((x, 24), time_str, fill=1, font=self._font)
-
-        # Date below time
-        date_str = now.strftime("%d %b %Y, %a")
-        bbox = draw.textbbox((0, 0), date_str, font=self._font)
-        w = bbox[2] - bbox[0]
-        x = (128 - w) // 2
-        draw.text((x, 44), date_str, fill=1, font=self._font)
+        self._center(draw, config.DISPLAY_IDLE_TEXT, 2, self._font_sm)
+        self._center(draw, now.strftime("%H:%M:%S"), 18, self._font_lg)
+        self._center(draw, now.strftime("%d %b %Y, %a"), 48, self._font_sm)
 
     def _draw_input(self, draw: ImageDraw.ImageDraw, masked: str) -> None:
-        draw.text((10, 8), "Enter Code:", fill=1, font=self._font)
-        # Show dots for each digit
+        self._center(draw, "Enter Code:", 6, self._font_md)
         dots = " ".join("*" for _ in masked) if masked else ""
-        bbox = draw.textbbox((0, 0), dots, font=self._font)
-        w = bbox[2] - bbox[0]
-        x = (128 - w) // 2
-        draw.text((x, 34), dots, fill=1, font=self._font)
+        self._center(draw, dots, 30, self._font_lg)
 
     def _draw_success(self, draw: ImageDraw.ImageDraw, until: datetime) -> None:
-        draw.text((10, 8), "Access Granted", fill=1, font=self._font)
-        # Convert UTC to local time for display
         local_until = until.astimezone(self._tz)
-        time_str = f"Until {local_until.strftime('%H:%M')}"
-        bbox = draw.textbbox((0, 0), time_str, font=self._font)
-        w = bbox[2] - bbox[0]
-        x = (128 - w) // 2
-        draw.text((x, 36), time_str, fill=1, font=self._font)
+        self._center(draw, "Access Granted", 8, self._font_md)
+        self._center(draw, f"Until {local_until.strftime('%H:%M')}", 34, self._font_lg)
 
     def _draw_error(self, draw: ImageDraw.ImageDraw, message: str) -> None:
-        draw.text((10, 8), "Error", fill=1, font=self._font)
-        # Word-wrap message if needed
-        draw.text((10, 30), message[:20], fill=1, font=self._font)
+        self._center(draw, "Error", 6, self._font_md)
+        self._center(draw, message[:20], 28, self._font_md)
         if len(message) > 20:
-            draw.text((10, 44), message[20:40], fill=1, font=self._font)
+            self._center(draw, message[20:40], 46, self._font_sm)
 
     def _draw_message(self, draw: ImageDraw.ImageDraw, line1: str, line2: str) -> None:
-        bbox = draw.textbbox((0, 0), line1, font=self._font)
-        w = bbox[2] - bbox[0]
-        x = (128 - w) // 2
-        draw.text((x, 16), line1, fill=1, font=self._font)
+        self._center(draw, line1, 14, self._font_md)
         if line2:
-            bbox = draw.textbbox((0, 0), line2, font=self._font)
-            w = bbox[2] - bbox[0]
-            x = (128 - w) // 2
-            draw.text((x, 36), line2, fill=1, font=self._font)
+            self._center(draw, line2, 36, self._font_md)
 
     def _schedule_return(self, seconds: float) -> None:
         self._cancel_timer()
