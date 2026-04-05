@@ -6,14 +6,29 @@ from app.hardware.relay import RelayController
 
 logger = logging.getLogger(__name__)
 
+# Module-level reference set by LightManager.__init__
+# Used by the scheduler callback to avoid pickling the instance
+_instance: "LightManager | None" = None
+
+
+def _scheduled_turn_off(light_id: int) -> None:
+    """Standalone function called by APScheduler — avoids pickling LightManager."""
+    if _instance is not None:
+        relay = _instance._relays.get(light_id)
+        if relay and relay.is_on():
+            relay.off()
+            logger.info("Light %d auto-OFF (scheduler)", light_id)
+
 
 class LightManager:
     """Manages light zone relays with scheduled auto-off via APScheduler."""
 
     def __init__(self, light_relays: dict[int, RelayController], scheduler) -> None:
+        global _instance
         self._relays = light_relays
         self._scheduler = scheduler
         self._lock = threading.Lock()
+        _instance = self
 
     def turn_on(self, light_id: int, until: datetime) -> None:
         with self._lock:
@@ -32,9 +47,9 @@ class LightManager:
             except Exception:
                 pass
 
-            # Schedule turn-off
+            # Schedule turn-off using module-level function (picklable)
             self._scheduler.add_job(
-                self._turn_off_job,
+                _scheduled_turn_off,
                 "date",
                 run_date=until,
                 args=[light_id],
@@ -56,13 +71,6 @@ class LightManager:
                 self._scheduler.remove_job(job_id)
             except Exception:
                 pass
-
-    def _turn_off_job(self, light_id: int) -> None:
-        """Called by scheduler — turn off relay (idempotent)."""
-        relay = self._relays.get(light_id)
-        if relay and relay.is_on():
-            relay.off()
-            logger.info("Light %d auto-OFF (scheduler)", light_id)
 
     def turn_off_all(self) -> None:
         for light_id in list(self._relays.keys()):
