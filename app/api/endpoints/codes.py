@@ -127,7 +127,7 @@ def list_codes(
 
 @router.get("/check/{code}", response_model=AccessCodeStatus)
 @limiter.limit("10/minute")
-def check_code(code: str, session: Session = Depends(get_session)):
+def check_code(code: str, request: Request, session: Session = Depends(get_session)):
     ac = session.exec(select(AccessCode).where(AccessCode.code == code)).first()
     if not ac:
         return AccessCodeStatus(code=code, status="not_found")
