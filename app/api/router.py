@@ -1,0 +1,71 @@
+import logging
+import time
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Header, Query
+from sqlmodel import Session, col, select
+
+from app import config
+from app.api.endpoints import codes, control
+from app.core.database import get_session
+from app.core.models import AuditLog, AuditLogRead
+
+logger = logging.getLogger(__name__)
+
+_start_time = time.time()
+
+
+# ─── Auth dependency ──────────────────────────────
+
+async def verify_api_key(authorization: str = Header(...)) -> None:
+    expected = f"Bearer {config.API_KEY}"
+    if authorization != expected:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+
+# ─── Build main router ───────────────────────────
+
+api_router = APIRouter()
+
+# Codes — requires auth
+api_router.include_router(
+    codes.router,
+    prefix="/api/codes",
+    tags=["codes"],
+    dependencies=[Depends(verify_api_key)],
+)
+
+# Control — requires auth
+api_router.include_router(
+    control.router,
+    prefix="/api/control",
+    tags=["control"],
+    dependencies=[Depends(verify_api_key)],
+)
+
+
+# ─── Health (no auth) ────────────────────────────
+
+@api_router.get("/api/health", tags=["system"])
+def health():
+    return {
+        "status": "ok",
+        "uptime_seconds": int(time.time() - _start_time),
+    }
+
+
+# ─── Audit logs (auth required) ──────────────────
+
+@api_router.get("/api/logs", tags=["system"], response_model=list[AuditLogRead])
+def get_logs(
+    limit: int = Query(default=50, le=500),
+    event: Optional[str] = None,
+    _auth: None = Depends(verify_api_key),
+    session: Session = Depends(get_session),
+):
+    statement = select(AuditLog).order_by(col(AuditLog.timestamp).desc())
+    if event:
+        statement = statement.where(AuditLog.event == event)
+    statement = statement.limit(limit)
+    logs = session.exec(statement).all()
+    return logs
