@@ -2,6 +2,20 @@
 
 Raspberry Pi 4 (Ubuntu Server 24) based access control for a padel facility. Controls a door lock (12V relay) and lights (220V relays) via keypad input and REST API, exposed publicly via Cloudflare Tunnel.
 
+**Repository:** https://github.com/trongio/padel-access.git
+
+## Features
+
+- 4x4 keypad code entry with OLED display feedback
+- Door lock relay (12V) with configurable unlock duration
+- 2 light zone relays (220V) with scheduled auto-off
+- One-time and multi-use access codes
+- Auto-generate random codes for booking integration
+- REST API for remote control and code management
+- Cloudflare Tunnel for secure public access
+- Audit logging for all door and light events
+- Graceful hardware degradation (runs API-only without hardware)
+
 ## Hardware Wiring
 
 | # | Item | Connection | Purpose |
@@ -31,7 +45,7 @@ GPIO HIGH = buzzer ON.
 
 ```bash
 # 1. Clone to Pi
-git clone <repo> /opt/padel-access
+git clone https://github.com/trongio/padel-access.git /opt/padel-access
 cd /opt/padel-access
 
 # 2. Run interactive setup (installs deps, I2C, .env wizard, systemd)
@@ -63,74 +77,143 @@ sudo bash scripts/status.sh    # Show status + tunnel URL + health
 
 All endpoints (except `/api/health`) require: `Authorization: Bearer <API_KEY>`
 
+A [Postman collection](Padel_Access_API.postman_collection.json) is included for easy API testing and client handoff.
+
 ### Health Check
 
 ```bash
-curl http://localhost:8000/api/health
+curl https://padel.hackerman.ge/api/health
 ```
 
 ### Create Access Code
 
 ```bash
-curl -X POST http://localhost:8000/api/codes \
+curl -X POST https://padel.hackerman.ge/api/codes \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "code": "1234",
     "light_ids": [1, 2],
-    "valid_from": "2025-06-01T08:00:00",
-    "valid_until": "2025-06-01T22:00:00",
-    "label": "Court 1 - John"
+    "valid_from": "2026-04-05T08:00:00",
+    "valid_until": "2026-04-05T22:00:00",
+    "label": "Court 1 - John",
+    "max_uses": null
   }'
 ```
+
+Set `max_uses` to `1` for a one-time code, or `null` for unlimited uses.
+
+### Generate Random Code
+
+```bash
+curl -X POST https://padel.hackerman.ge/api/codes/generate \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "light_ids": [1, 2],
+    "valid_from": "2026-04-05T08:00:00",
+    "valid_until": "2026-04-05T22:00:00",
+    "label": "Walk-in Customer",
+    "max_uses": 1,
+    "code_length": 6
+  }'
+```
+
+Returns the generated code in the response. Ideal for booking system integration.
 
 ### List Codes
 
 ```bash
-curl http://localhost:8000/api/codes?active_only=true \
+curl https://padel.hackerman.ge/api/codes?active_only=true \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
 ### Remote Door Unlock
 
 ```bash
-curl -X POST http://localhost:8000/api/control/door \
+curl -X POST https://padel.hackerman.ge/api/control/door \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
 ### Remote Light Control
 
 ```bash
-# Turn on
-curl -X POST http://localhost:8000/api/control/lights \
+# Turn on (until = auto-off time)
+curl -X POST https://padel.hackerman.ge/api/control/lights \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"light_ids": [1], "action": "on", "until": "2025-06-01T22:00:00"}'
+  -d '{"light_ids": [1, 2], "action": "on", "until": "2026-04-05T22:00:00"}'
 
-# Turn off
-curl -X POST http://localhost:8000/api/control/lights \
+# Turn off specific zones
+curl -X POST https://padel.hackerman.ge/api/control/lights \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"light_ids": [1], "action": "off"}'
+
+# Emergency: turn off all lights
+curl -X POST https://padel.hackerman.ge/api/control/lights \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"action": "off_all"}'
 ```
 
 ### Relay Status
 
 ```bash
-curl http://localhost:8000/api/control/status \
+curl https://padel.hackerman.ge/api/control/status \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
 ### Audit Logs
 
 ```bash
-curl "http://localhost:8000/api/logs?limit=50&event=DOOR_OPEN" \
+curl "https://padel.hackerman.ge/api/logs?limit=50&event=DOOR_OPEN" \
   -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+**Event types:** `DOOR_OPEN`, `LIGHT_ON`, `LIGHT_OFF`, `CODE_FAIL`, `REMOTE_DOOR`, `REMOTE_LIGHT`
+
+## Project Structure
+
+```
+padel-access/
+├── main.py                  # Entry point: startup, keypad flow, shutdown
+├── app/
+│   ├── config.py            # Environment config loader
+│   ├── api/
+│   │   ├── router.py        # FastAPI router, auth, health, logs
+│   │   └── endpoints/
+│   │       ├── codes.py     # Codes CRUD + generate
+│   │       └── control.py   # Door/light remote control
+│   ├── core/
+│   │   ├── database.py      # SQLite engine, sessions, migrations
+│   │   ├── models.py        # SQLModel tables + Pydantic schemas
+│   │   └── scheduler.py     # APScheduler with job persistence
+│   ├── hardware/
+│   │   ├── relay.py         # Thread-safe GPIO relay controller
+│   │   ├── keypad.py        # 4x4 matrix keypad (pad4pi)
+│   │   ├── display.py       # OLED SSD1306 queue-based display
+│   │   ├── buzzer.py        # Active buzzer with beep patterns
+│   │   └── button.py        # Exit button with edge detection
+│   └── services/
+│       ├── access.py        # Code validation + use tracking
+│       └── light_manager.py # Light zones with auto-off scheduling
+├── scripts/                 # init, start, stop, restart, status
+├── systemd/                 # padel-access.service, padel-tunnel.service
+├── Padel_Access_API.postman_collection.json
+├── .env.example
+└── requirements.txt
 ```
 
 ## Environment Variables
 
 See [`.env.example`](.env.example) for all configuration options.
+
+Key settings:
+- `API_KEY` — Bearer token for API authentication
+- `TZ` — Timezone for display (e.g. `Asia/Tbilisi`)
+- `DOOR_UNLOCK_DURATION` — Seconds to keep door unlocked (default: 5)
+- `CF_TUNNEL_TOKEN` — Cloudflare Tunnel token for public access
 
 ## Keypad Operation
 
@@ -140,6 +223,7 @@ See [`.env.example`](.env.example) for all configuration options.
 4. On success: door unlocks, lights turn on, display shows "Access Granted"
 5. On failure: buzzer error tone, display shows error message
 6. Input auto-clears after 15 seconds of inactivity
+7. One-time codes auto-deactivate after use
 
 ## Logs
 
