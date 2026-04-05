@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timezone
 from typing import Optional
 
+from pydantic import field_validator
 from sqlmodel import Field, SQLModel
 
 
@@ -46,31 +47,64 @@ class AuditLog(SQLModel, table=True):
 # ─── Request / Response Schemas ───────────────────
 
 
-class AccessCodeCreate(SQLModel):
-    code: str
+class _ValidatedCodeMixin:
+    @field_validator("light_ids")
+    @classmethod
+    def validate_light_ids(cls, v: list[int]) -> list[int]:
+        if len(v) > 10:
+            raise ValueError("light_ids must have 10 or fewer entries")
+        for lid in v:
+            if lid < 1 or lid > 10:
+                raise ValueError(f"light_id must be between 1 and 10, got {lid}")
+        return v
+
+    @field_validator("label")
+    @classmethod
+    def validate_label(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and len(v) > 100:
+            raise ValueError("label must be 100 characters or fewer")
+        return v
+
+
+class AccessCodeCreate(_ValidatedCodeMixin, SQLModel):
+    code: str = Field(min_length=4, max_length=16, pattern=r"^[0-9A-D]+$")
     light_ids: list[int]
     valid_from: datetime
     valid_until: datetime
     label: Optional[str] = None
-    max_uses: Optional[int] = None  # None = unlimited, 1 = one-time
+    max_uses: Optional[int] = Field(default=None, ge=1)  # None = unlimited, 1 = one-time
+
+    @field_validator("valid_until")
+    @classmethod
+    def validate_dates(cls, v: datetime, info) -> datetime:
+        if "valid_from" in info.data and v <= info.data["valid_from"]:
+            raise ValueError("valid_until must be after valid_from")
+        return v
 
 
-class AccessCodeGenerate(SQLModel):
+class AccessCodeGenerate(_ValidatedCodeMixin, SQLModel):
     light_ids: list[int]
     valid_from: datetime
     valid_until: datetime
     label: Optional[str] = None
-    max_uses: Optional[int] = 1  # defaults to one-time
-    code_length: int = 6
+    max_uses: Optional[int] = Field(default=1, ge=1)  # defaults to one-time
+    code_length: int = Field(default=6, ge=4, le=10)
+
+    @field_validator("valid_until")
+    @classmethod
+    def validate_dates(cls, v: datetime, info) -> datetime:
+        if "valid_from" in info.data and v <= info.data["valid_from"]:
+            raise ValueError("valid_until must be after valid_from")
+        return v
 
 
 class AccessCodeUpdate(SQLModel):
-    code: Optional[str] = None
+    code: Optional[str] = Field(default=None, min_length=4, max_length=16, pattern=r"^[0-9A-D]+$")
     light_ids: Optional[list[int]] = None
     valid_from: Optional[datetime] = None
     valid_until: Optional[datetime] = None
-    label: Optional[str] = None
-    max_uses: Optional[int] = None
+    label: Optional[str] = Field(default=None, max_length=100)
+    max_uses: Optional[int] = Field(default=None, ge=1)
     is_active: Optional[bool] = None
 
 

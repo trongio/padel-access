@@ -1,4 +1,5 @@
 import logging
+import secrets
 import time
 from typing import Optional
 
@@ -19,7 +20,7 @@ _start_time = time.time()
 
 async def verify_api_key(authorization: str = Header(...)) -> None:
     expected = f"Bearer {config.API_KEY}"
-    if authorization != expected:
+    if not secrets.compare_digest(authorization, expected):
         raise HTTPException(status_code=401, detail="Invalid API key")
 
 

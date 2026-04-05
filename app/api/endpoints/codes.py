@@ -104,7 +104,7 @@ def generate_code(
         for lid in body.light_ids:
             light_manager.turn_on(lid, ac.valid_until)
 
-    logger.info("Generated access code id=%d code=%s label=%s", ac.id, code, ac.label)
+    logger.info("Generated access code id=%d label=%s", ac.id, ac.label)
     return _to_read(ac)
 
 
