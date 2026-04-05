@@ -152,7 +152,7 @@ class DisplayManager:
         now = datetime.now(self._tz)
         self._center(draw, config.DISPLAY_IDLE_TEXT, 2, self._font_sm)
         self._center(draw, now.strftime("%H:%M:%S"), 18, self._font_lg)
-        self._center(draw, now.strftime("%d %b %Y, %a"), 48, self._font_sm)
+        self._center(draw, config.format_date(now), 48, self._font_sm)
 
     def _draw_input(self, draw: ImageDraw.ImageDraw, masked: str) -> None:
         self._center(draw, config.LANG["enter_code"], 6, self._font_md)

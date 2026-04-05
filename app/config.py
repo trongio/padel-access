@@ -56,6 +56,18 @@ _TRANSLATIONS = {
 }
 
 LANG: dict[str, str] = _TRANSLATIONS.get(APP_LANG.upper(), _TRANSLATIONS["EN"])
+
+_KA_MONTHS = ["იან", "თებ", "მარ", "აპრ", "მაი", "ივნ", "ივლ", "აგვ", "სექ", "ოქტ", "ნოე", "დეკ"]
+_KA_DAYS = ["ორშ", "სამ", "ოთხ", "ხუთ", "პარ", "შაბ", "კვი"]
+
+
+def format_date(dt) -> str:
+    """Format date for display in the configured language."""
+    if APP_LANG.upper() == "KA":
+        return f"{dt.day} {_KA_MONTHS[dt.month - 1]} {dt.year}, {_KA_DAYS[dt.weekday()]}"
+    return dt.strftime("%d %b %Y, %a")
+
+
 DISPLAY_IDLE_TEXT: str = os.getenv("DISPLAY_IDLE_TEXT", "AllDigital")
 DISPLAY_IDLE_SUBTEXT: str = os.getenv("DISPLAY_IDLE_SUBTEXT", "")
 
