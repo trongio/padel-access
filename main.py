@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from app import config
 from app.api.router import api_router
 from app.core.database import init_db, log_event
-from app.core.scheduler import create_scheduler, restore_light_jobs
+from app.core.scheduler import create_scheduler, restore_light_jobs, schedule_cleanup
 from app.hardware.button import ExitButton
 from app.hardware.buzzer import Buzzer
 from app.hardware.display import DisplayManager
@@ -186,6 +186,9 @@ def main() -> None:
     # 5. Init light manager + restore jobs
     _light_manager = LightManager(light_relays, _scheduler)
     restore_light_jobs(_scheduler, _light_manager)
+
+    # 5b. Schedule daily cleanup
+    schedule_cleanup(_scheduler)
 
     # 6. Init buzzer
     _buzzer = Buzzer(config.BUZZER_GPIO, config.BUZZER_ENABLED)
