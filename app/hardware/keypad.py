@@ -23,16 +23,20 @@ class KeypadManager:
         on_key_callback: Callable[[str], None],
     ) -> None:
         self._callback = on_key_callback
+        self._keypad = None
 
-        factory = KeypadFactory()
-        self._keypad = factory.create_keypad(
-            keypad=KEYPAD_LAYOUT,
-            row_pins=row_pins,
-            col_pins=col_pins,
-            key_delay=200,
-        )
-        self._keypad.registerKeyPressHandler(self._handle_key)
-        logger.info("Keypad initialized (rows=%s, cols=%s)", row_pins, col_pins)
+        try:
+            factory = KeypadFactory()
+            self._keypad = factory.create_keypad(
+                keypad=KEYPAD_LAYOUT,
+                row_pins=row_pins,
+                col_pins=col_pins,
+                key_delay=200,
+            )
+            self._keypad.registerKeyPressHandler(self._handle_key)
+            logger.info("Keypad initialized (rows=%s, cols=%s)", row_pins, col_pins)
+        except Exception:
+            logger.warning("Keypad init failed — running without keypad")
 
     def _handle_key(self, key: str) -> None:
         try:
@@ -42,6 +46,8 @@ class KeypadManager:
             logger.exception("Keypad callback error for key %s", key)
 
     def cleanup(self) -> None:
+        if self._keypad is None:
+            return
         try:
             self._keypad.cleanup()
         except Exception:

@@ -12,18 +12,23 @@ class ExitButton:
     """Exit button using internal pull-up and falling-edge detection."""
 
     def __init__(self, gpio_pin: int, on_press_callback: Callable[[], None]) -> None:
-        _ensure_gpio()
         self._pin = gpio_pin
         self._callback = on_press_callback
+        self._available = False
 
-        GPIO.setup(self._pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(
-            self._pin,
-            GPIO.FALLING,
-            callback=self._handle_press,
-            bouncetime=300,
-        )
-        logger.info("Exit button on GPIO %d initialized", self._pin)
+        try:
+            _ensure_gpio()
+            GPIO.setup(self._pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            GPIO.add_event_detect(
+                self._pin,
+                GPIO.FALLING,
+                callback=self._handle_press,
+                bouncetime=300,
+            )
+            self._available = True
+            logger.info("Exit button on GPIO %d initialized", self._pin)
+        except Exception:
+            logger.warning("Exit button init failed on GPIO %d — running without it", self._pin)
 
     def _handle_press(self, channel: int) -> None:
         try:
@@ -33,6 +38,8 @@ class ExitButton:
             logger.exception("Exit button callback error")
 
     def cleanup(self) -> None:
+        if not self._available:
+            return
         try:
             GPIO.remove_event_detect(self._pin)
         except Exception:
