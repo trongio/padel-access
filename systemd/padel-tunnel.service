@@ -1,0 +1,21 @@
+[Unit]
+Description=Cloudflare Tunnel — Padel Access
+After=network.target padel-access.service
+
+[Service]
+Type=simple
+User=root
+EnvironmentFile=/opt/padel-access/.env
+ExecStart=/bin/bash -c '\
+  if [ -n "$CF_TUNNEL_TOKEN" ]; then \
+    cloudflared tunnel --no-autoupdate run --token $CF_TUNNEL_TOKEN; \
+  else \
+    cloudflared tunnel --no-autoupdate --url http://localhost:$APP_PORT; \
+  fi'
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

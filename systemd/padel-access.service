@@ -1,0 +1,17 @@
+[Unit]
+Description=Padel Access Control
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/padel-access
+EnvironmentFile=/opt/padel-access/.env
+ExecStart=/opt/padel-access/venv/bin/python main.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
