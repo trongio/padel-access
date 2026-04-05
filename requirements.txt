@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+RPi.GPIO
+luma.oled
+Pillow
+apscheduler
+python-dotenv
+pad4pi
