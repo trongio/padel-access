@@ -42,7 +42,21 @@ def validate_code(code: str) -> ValidationResult:
             logger.info("Code validation failed: expired")
             return ValidationResult(success=False, reason="Code expired")
 
-        logger.info("Code validated successfully (label=%s)", access_code.label)
+        if access_code.max_uses is not None and access_code.use_count >= access_code.max_uses:
+            logger.info("Code validation failed: max uses reached")
+            return ValidationResult(success=False, reason="Code already used")
+
+        # Increment use count and auto-deactivate if max reached
+        access_code.use_count += 1
+        if access_code.max_uses is not None and access_code.use_count >= access_code.max_uses:
+            access_code.is_active = False
+            logger.info("Code auto-deactivated after %d uses", access_code.use_count)
+        session.add(access_code)
+        session.commit()
+
+        logger.info("Code validated successfully (label=%s, use %d/%s)",
+                     access_code.label, access_code.use_count,
+                     access_code.max_uses or "unlimited")
         return ValidationResult(
             success=True,
             light_ids=access_code.light_ids_list,

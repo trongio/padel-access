@@ -17,6 +17,8 @@ class AccessCode(SQLModel, table=True):
     valid_from: datetime = Field(nullable=False)
     valid_until: datetime = Field(nullable=False)
     label: Optional[str] = None
+    max_uses: Optional[int] = Field(default=None)  # None = unlimited, 1 = one-time code
+    use_count: int = Field(default=0)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_active: bool = Field(default=True)
 
@@ -50,6 +52,16 @@ class AccessCodeCreate(SQLModel):
     valid_from: datetime
     valid_until: datetime
     label: Optional[str] = None
+    max_uses: Optional[int] = None  # None = unlimited, 1 = one-time
+
+
+class AccessCodeGenerate(SQLModel):
+    light_ids: list[int]
+    valid_from: datetime
+    valid_until: datetime
+    label: Optional[str] = None
+    max_uses: Optional[int] = 1  # defaults to one-time
+    code_length: int = 6
 
 
 class AccessCodeUpdate(SQLModel):
@@ -58,6 +70,7 @@ class AccessCodeUpdate(SQLModel):
     valid_from: Optional[datetime] = None
     valid_until: Optional[datetime] = None
     label: Optional[str] = None
+    max_uses: Optional[int] = None
     is_active: Optional[bool] = None
 
 
@@ -68,6 +81,8 @@ class AccessCodeRead(SQLModel):
     valid_from: datetime
     valid_until: datetime
     label: Optional[str]
+    max_uses: Optional[int]
+    use_count: int
     is_active: bool
     created_at: datetime
 

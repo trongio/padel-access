@@ -97,7 +97,29 @@
 							"host": ["{{base_url}}"],
 							"path": ["api", "codes"]
 						},
-						"description": "Create a new access code for the facility.\n\n**Fields:**\n- `code` — The numeric code the user will enter on the keypad\n- `light_ids` — Which light zones to activate: `[1]`, `[2]`, or `[1, 2]`\n- `valid_from` — Start of validity window (UTC)\n- `valid_until` — End of validity window (UTC). Lights auto-off at this time\n- `label` — Human-readable label (e.g. customer name, court number)"
+						"description": "Create a new access code for the facility.\n\n**Fields:**\n- `code` — The numeric code the user will enter on the keypad\n- `light_ids` — Which light zones to activate: `[1]`, `[2]`, or `[1, 2]`\n- `valid_from` — Start of validity window (UTC)\n- `valid_until` — End of validity window (UTC). Lights auto-off at this time\n- `label` — Human-readable label (e.g. customer name, court number)\n- `max_uses` — (optional) Max number of uses. Set to `1` for one-time codes. Omit for unlimited."
+					}
+				},
+				{
+					"name": "Generate Random Code",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"light_ids\": [1, 2],\n    \"valid_from\": \"2026-04-05T08:00:00\",\n    \"valid_until\": \"2026-04-05T22:00:00\",\n    \"label\": \"Court 1 - Walk-in\",\n    \"max_uses\": 1,\n    \"code_length\": 6\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/codes/generate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "codes", "generate"]
+						},
+						"description": "Auto-generate a random numeric code. Perfect for booking systems.\n\n**Fields:**\n- `light_ids` — Which light zones to activate\n- `valid_from` / `valid_until` — Validity window\n- `label` — Human-readable label\n- `max_uses` — Max uses (default: 1 = one-time code). Set to `null` for unlimited\n- `code_length` — Number of digits (default: 6)\n\nReturns the generated code in the response."
 					}
 				},
 				{

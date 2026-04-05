@@ -16,9 +16,28 @@ engine = create_engine(
 )
 
 
+def _migrate_db() -> None:
+    """Add columns that may be missing from older database versions."""
+    import sqlite3
+    db_path = DATABASE_URL.replace("sqlite:///", "")
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(access_code)")
+    columns = {row[1] for row in cursor.fetchall()}
+    if "max_uses" not in columns:
+        cursor.execute("ALTER TABLE access_code ADD COLUMN max_uses INTEGER DEFAULT NULL")
+        logger.info("Migration: added max_uses column")
+    if "use_count" not in columns:
+        cursor.execute("ALTER TABLE access_code ADD COLUMN use_count INTEGER DEFAULT 0 NOT NULL")
+        logger.info("Migration: added use_count column")
+    conn.commit()
+    conn.close()
+
+
 def init_db() -> None:
     """Create all tables if they don't exist."""
     SQLModel.metadata.create_all(engine)
+    _migrate_db()
     logger.info("Database initialized at %s", DATABASE_URL)
 
 
