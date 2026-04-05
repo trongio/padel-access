@@ -108,13 +108,15 @@ if [ -z "$ENV_SKIP" ]; then
     echo "    → Generated: $INPUT_API_KEY"
   fi
 
+  # Language
+  echo "    Language options: EN (English) / KA (ქართული)"
+  read -rp "    Display language [EN]: " INPUT_LANG
+  INPUT_LANG="${INPUT_LANG:-EN}"
+  INPUT_LANG=$(echo "$INPUT_LANG" | tr '[:lower:]' '[:upper:]')
+
   # Display idle text
   read -rp "    Display idle text [AllDigital]: " INPUT_IDLE_TEXT
   INPUT_IDLE_TEXT="${INPUT_IDLE_TEXT:-AllDigital}"
-
-  # Display idle subtext
-  read -rp "    Display idle subtext [Welcome]: " INPUT_IDLE_SUBTEXT
-  INPUT_IDLE_SUBTEXT="${INPUT_IDLE_SUBTEXT:-Welcome}"
 
   # App port
   read -rp "    API port [8000]: " INPUT_PORT
@@ -151,6 +153,7 @@ APP_PORT=${INPUT_PORT}
 API_KEY=${INPUT_API_KEY}
 LOG_LEVEL=INFO
 TZ=${INPUT_TZ}
+APP_LANG=${INPUT_LANG}
 
 # ─── Display ──────────────────────────────────────
 DISPLAY_IDLE_TEXT=${INPUT_IDLE_TEXT}

@@ -27,9 +27,37 @@ API_KEY: str = os.getenv("API_KEY", "change_me_strong_secret")
 LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
 TZ: str = os.getenv("TZ", "UTC")
 
-# ─── Display ──────────────────────────────────────
+# ─── Language & Display ───────────────────────────
+APP_LANG: str = os.getenv("APP_LANG", "EN")  # EN or KA
+
+_TRANSLATIONS = {
+    "EN": {
+        "enter_code": "Enter Code:",
+        "access_granted": "Access Granted",
+        "error": "Error",
+        "invalid_code": "Invalid code",
+        "code_expired": "Code expired",
+        "code_not_valid": "Code not yet valid",
+        "code_used": "Code already used",
+        "shutting_down": "Shutting down...",
+        "until": "Until",
+    },
+    "KA": {
+        "enter_code": "შეიყვანეთ კოდი:",
+        "access_granted": "წვდომა მინიჭებულია",
+        "error": "შეცდომა",
+        "invalid_code": "არასწორი კოდი",
+        "code_expired": "კოდი ვადაგასულია",
+        "code_not_valid": "კოდი ჯერ არ მოქმედებს",
+        "code_used": "კოდი უკვე გამოყენებულია",
+        "shutting_down": "გამორთვა...",
+        "until": "სანამ",
+    },
+}
+
+LANG: dict[str, str] = _TRANSLATIONS.get(APP_LANG.upper(), _TRANSLATIONS["EN"])
 DISPLAY_IDLE_TEXT: str = os.getenv("DISPLAY_IDLE_TEXT", "AllDigital")
-DISPLAY_IDLE_SUBTEXT: str = os.getenv("DISPLAY_IDLE_SUBTEXT", "Welcome")
+DISPLAY_IDLE_SUBTEXT: str = os.getenv("DISPLAY_IDLE_SUBTEXT", "")
 
 # ─── Hardware ─────────────────────────────────────
 RELAY_ACTIVE_LOW: bool = _bool(os.getenv("RELAY_ACTIVE_LOW", "true"), default=True)

@@ -5,6 +5,7 @@ from typing import Optional
 
 from sqlmodel import Session, select
 
+from app import config
 from app.core.database import engine
 from app.core.models import AccessCode
 
@@ -30,21 +31,21 @@ def validate_code(code: str) -> ValidationResult:
 
         if access_code is None:
             logger.info("Code validation failed: invalid code")
-            return ValidationResult(success=False, reason="Invalid code")
+            return ValidationResult(success=False, reason=config.LANG["invalid_code"])
 
         now = datetime.now(timezone.utc).replace(tzinfo=None)
 
         if now < access_code.valid_from:
             logger.info("Code validation failed: not yet valid")
-            return ValidationResult(success=False, reason="Code not yet valid")
+            return ValidationResult(success=False, reason=config.LANG["code_not_valid"])
 
         if now > access_code.valid_until:
             logger.info("Code validation failed: expired")
-            return ValidationResult(success=False, reason="Code expired")
+            return ValidationResult(success=False, reason=config.LANG["code_expired"])
 
         if access_code.max_uses is not None and access_code.use_count >= access_code.max_uses:
             logger.info("Code validation failed: max uses reached")
-            return ValidationResult(success=False, reason="Code already used")
+            return ValidationResult(success=False, reason=config.LANG["code_used"])
 
         # Increment use count and auto-deactivate if max reached
         access_code.use_count += 1

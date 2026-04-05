@@ -155,17 +155,17 @@ class DisplayManager:
         self._center(draw, now.strftime("%d %b %Y, %a"), 48, self._font_sm)
 
     def _draw_input(self, draw: ImageDraw.ImageDraw, masked: str) -> None:
-        self._center(draw, "Enter Code:", 6, self._font_md)
+        self._center(draw, config.LANG["enter_code"], 6, self._font_md)
         dots = " ".join("*" for _ in masked) if masked else ""
         self._center(draw, dots, 30, self._font_lg)
 
     def _draw_success(self, draw: ImageDraw.ImageDraw, until: datetime) -> None:
         local_until = until.astimezone(self._tz)
-        self._center(draw, "Access Granted", 8, self._font_md)
-        self._center(draw, f"Until {local_until.strftime('%H:%M')}", 34, self._font_lg)
+        self._center(draw, config.LANG["access_granted"], 8, self._font_md)
+        self._center(draw, f"{config.LANG['until']} {local_until.strftime('%H:%M')}", 34, self._font_lg)
 
     def _draw_error(self, draw: ImageDraw.ImageDraw, message: str) -> None:
-        self._center(draw, "Error", 6, self._font_md)
+        self._center(draw, config.LANG["error"], 6, self._font_md)
         self._center(draw, message[:20], 28, self._font_md)
         if len(message) > 20:
             self._center(draw, message[20:40], 46, self._font_sm)

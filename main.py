@@ -149,7 +149,7 @@ def _shutdown(signum=None, frame=None) -> None:
     _reset_input()
     _light_manager.turn_off_all()
     _door_relay.off()
-    _display.show_message("Shutting down...", duration=2)
+    _display.show_message(config.LANG["shutting_down"], duration=2)
     _scheduler.shutdown(wait=False)
     _keypad.cleanup()
     _exit_button.cleanup()
