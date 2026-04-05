@@ -10,6 +10,7 @@ def _utcnow() -> datetime:
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 
+from app.api.limiter import limiter
 from app.core.database import get_session, log_event
 from app.core.models import AccessCode, AccessCodeCreate, AccessCodeGenerate, AccessCodeRead, AccessCodeStatus, AccessCodeUpdate
 
@@ -43,6 +44,7 @@ def _generate_unique_code(session: Session, length: int = 6) -> str:
 
 
 @router.post("", status_code=201, response_model=AccessCodeRead)
+@limiter.limit("20/minute")
 def create_code(
     body: AccessCodeCreate,
     request: Request,
@@ -79,6 +81,7 @@ def create_code(
 
 
 @router.post("/generate", status_code=201, response_model=AccessCodeRead)
+@limiter.limit("20/minute")
 def generate_code(
     body: AccessCodeGenerate,
     request: Request,
@@ -121,6 +124,7 @@ def list_codes(
 
 
 @router.get("/check/{code}", response_model=AccessCodeStatus)
+@limiter.limit("10/minute")
 def check_code(code: str, session: Session = Depends(get_session)):
     ac = session.exec(select(AccessCode).where(AccessCode.code == code)).first()
     if not ac:

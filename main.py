@@ -3,11 +3,15 @@ import logging
 import signal
 import sys
 import threading
+import time
 
 import uvicorn
 from fastapi import FastAPI
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from app import config
+from app.api.limiter import limiter
 from app.api.router import api_router
 from app.core.database import init_db, log_event
 from app.core.scheduler import create_scheduler, restore_light_jobs, schedule_cleanup
@@ -32,6 +36,12 @@ logger = logging.getLogger("padel-access")
 _input_buffer = ""
 _input_lock = threading.Lock()
 _input_timer: threading.Timer | None = None
+
+# Brute-force protection
+_MAX_FAILED_ATTEMPTS = 5
+_LOCKOUT_SECONDS = 60
+_failed_attempts = 0
+_lockout_until: float = 0.0
 
 # Globals set during init
 _door_relay: RelayController
@@ -95,13 +105,25 @@ def _on_key_press(key: str) -> None:
 
 
 def _submit_code(code: str) -> None:
+    global _failed_attempts, _lockout_until
+
     if not code:
         _display.show_idle()
+        return
+
+    # Check lockout
+    now = time.time()
+    if now < _lockout_until:
+        remaining = int(_lockout_until - now)
+        _buzzer.beep_error()
+        _display.show_error(f"Locked {remaining}s", duration=2)
+        logger.warning("Keypad locked out — %d seconds remaining", remaining)
         return
 
     result = validate_code(code)
 
     if result.success:
+        _failed_attempts = 0
         _buzzer.beep_success()
         _display.show_success(result.valid_until)
         _door_relay.pulse(config.DOOR_UNLOCK_DURATION)
@@ -122,6 +144,12 @@ def _submit_code(code: str) -> None:
             actor="keypad",
         )
     else:
+        _failed_attempts += 1
+        if _failed_attempts >= _MAX_FAILED_ATTEMPTS:
+            _lockout_until = time.time() + _LOCKOUT_SECONDS
+            logger.warning("Keypad locked out for %ds after %d failed attempts", _LOCKOUT_SECONDS, _failed_attempts)
+            _failed_attempts = 0
+
         _buzzer.beep_error()
         _display.show_error(result.reason)
         log_event(
@@ -195,6 +223,8 @@ def main() -> None:
 
     # 7. Build FastAPI app
     app = FastAPI(title="Padel Access Control")
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     app.include_router(api_router)
     app.state.door_relay = _door_relay
     app.state.light_manager = _light_manager

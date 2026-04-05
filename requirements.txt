@@ -7,3 +7,4 @@ Pillow
 apscheduler
 python-dotenv
 pad4pi
+slowapi

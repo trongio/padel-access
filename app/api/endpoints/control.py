@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from app import config
+from app.api.limiter import limiter
 from app.core.database import log_event
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,7 @@ class LightControlRequest(BaseModel):
 
 
 @router.post("/door")
+@limiter.limit("5/minute")
 def remote_door(request: Request):
     door_relay = request.app.state.door_relay
     buzzer = request.app.state.buzzer
@@ -34,7 +36,8 @@ def remote_door(request: Request):
 
 
 @router.post("/lights")
-def remote_lights(body: LightControlRequest, request: Request):
+@limiter.limit("20/minute")
+def remote_lights(request: Request, body: LightControlRequest):
     light_manager = request.app.state.light_manager
 
     if body.action == "on":
