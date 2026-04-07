@@ -23,7 +23,14 @@ from pathlib import Path
 # If RPi.GPIO is missing in the current interpreter, try to re-exec under
 # the project venv. The service runs from /opt/padel-access/venv, but a
 # clone in $HOME or anywhere else will also have ./venv or ./.venv.
+#
+# NOTE: do NOT compare resolved paths — venv pythons are typically symlinks
+# straight to /usr/bin/python3, so .resolve() makes them look identical to
+# the system interpreter. The venv is selected via pyvenv.cfg, not a separate
+# binary, so we must invoke it under its own (unresolved) path.
 def _reexec_in_venv() -> None:
+    if os.environ.get("KEYPAD_PROBE_REEXEC"):
+        return  # already re-execed once, avoid infinite loop
     here = Path(__file__).resolve().parent.parent
     candidates = [
         here / "venv" / "bin" / "python",
@@ -31,8 +38,10 @@ def _reexec_in_venv() -> None:
         Path("/opt/padel-access/venv/bin/python"),
     ]
     for py in candidates:
-        if py.exists() and py.resolve() != Path(sys.executable).resolve():
-            os.execv(str(py), [str(py), *sys.argv])
+        if py.exists() and str(py) != sys.executable:
+            env = os.environ.copy()
+            env["KEYPAD_PROBE_REEXEC"] = "1"
+            os.execve(str(py), [str(py), *sys.argv], env)
 
 try:
     import RPi.GPIO as GPIO
