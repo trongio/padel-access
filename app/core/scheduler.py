@@ -23,10 +23,17 @@ def _utcnow_naive() -> datetime:
 
 
 def create_scheduler(db_url: str) -> BackgroundScheduler:
-    """Create a BackgroundScheduler with SQLAlchemy-backed job store."""
+    """Create a BackgroundScheduler with SQLAlchemy-backed job store.
+
+    The scheduler must use UTC to match the rest of the app: every datetime
+    we store (codes, audit logs) is naive UTC. Without an explicit timezone
+    APScheduler defaults to local system time, which silently shifts every
+    naive datetime by the local UTC offset and causes turn-off jobs to fire
+    in the past on systems where TZ != UTC.
+    """
     jobstores = {"default": SQLAlchemyJobStore(url=db_url)}
-    scheduler = BackgroundScheduler(jobstores=jobstores)
-    logger.info("Scheduler created with SQLAlchemy job store")
+    scheduler = BackgroundScheduler(jobstores=jobstores, timezone="UTC")
+    logger.info("Scheduler created with SQLAlchemy job store (timezone=UTC)")
     return scheduler
 
 
