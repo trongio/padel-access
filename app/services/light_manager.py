@@ -59,22 +59,27 @@ class LightManager:
 
     def turn_off(self, light_id: int) -> None:
         with self._lock:
-            relay = self._relays.get(light_id)
-            if relay is None:
-                return
+            self._turn_off_locked(light_id)
 
-            relay.off()
-            logger.info("Light %d OFF", light_id)
+    def _turn_off_locked(self, light_id: int) -> None:
+        """Caller must hold self._lock."""
+        relay = self._relays.get(light_id)
+        if relay is None:
+            return
 
-            job_id = f"light_off_{light_id}"
-            try:
-                self._scheduler.remove_job(job_id)
-            except Exception:
-                pass
+        relay.off()
+        logger.info("Light %d OFF", light_id)
+
+        job_id = f"light_off_{light_id}"
+        try:
+            self._scheduler.remove_job(job_id)
+        except Exception:
+            pass
 
     def turn_off_all(self) -> None:
-        for light_id in list(self._relays.keys()):
-            self.turn_off(light_id)
+        with self._lock:
+            for light_id in list(self._relays.keys()):
+                self._turn_off_locked(light_id)
 
     def get_status(self) -> dict:
         status = {}

@@ -15,6 +15,11 @@ CODE_RETENTION_DAYS = 30
 LOG_RETENTION_DAYS = 90
 
 
+def _utcnow_naive() -> datetime:
+    """All stored datetimes are naive UTC — keep comparisons consistent."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 def create_scheduler(db_url: str) -> BackgroundScheduler:
     """Create a BackgroundScheduler with SQLAlchemy-backed job store."""
     jobstores = {"default": SQLAlchemyJobStore(url=db_url)}
@@ -25,7 +30,7 @@ def create_scheduler(db_url: str) -> BackgroundScheduler:
 
 def restore_light_jobs(scheduler: BackgroundScheduler, light_manager) -> None:
     """On startup, re-schedule turn-off jobs for all active codes still in their validity window."""
-    now = datetime.now(timezone.utc)
+    now = _utcnow_naive()
     count = 0
 
     with Session(engine) as session:
@@ -45,7 +50,7 @@ def restore_light_jobs(scheduler: BackgroundScheduler, light_manager) -> None:
 
 def cleanup_old_data() -> None:
     """Delete expired/deactivated codes and old audit logs past retention."""
-    now = datetime.now(timezone.utc)
+    now = _utcnow_naive()
     code_cutoff = now - timedelta(days=CODE_RETENTION_DAYS)
     log_cutoff = now - timedelta(days=LOG_RETENTION_DAYS)
 

@@ -1,23 +1,59 @@
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from app import config
 from app.api.limiter import limiter
 from app.core.database import log_event
+from app.core.models import to_naive_utc
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# Maximum lookahead for the `until` parameter on light control. A typo
+# (e.g. wrong year) shouldn't be able to leave the lights on for years.
+_MAX_UNTIL_DAYS = 30
+_VALID_ACTIONS = {"on", "off", "off_all"}
 
 
 class LightControlRequest(BaseModel):
     light_ids: list[int] = []
     action: str  # "on" | "off" | "off_all"
     until: Optional[datetime] = None
+
+    @field_validator("action")
+    @classmethod
+    def validate_action(cls, v: str) -> str:
+        if v not in _VALID_ACTIONS:
+            raise ValueError(f"action must be one of: {sorted(_VALID_ACTIONS)}")
+        return v
+
+    @field_validator("light_ids")
+    @classmethod
+    def validate_light_ids(cls, v: list[int]) -> list[int]:
+        if len(v) > 10:
+            raise ValueError("light_ids must have 10 or fewer entries")
+        for lid in v:
+            if lid < 1 or lid > 10:
+                raise ValueError(f"light_id must be between 1 and 10, got {lid}")
+        return v
+
+    @field_validator("until")
+    @classmethod
+    def validate_until(cls, v: Optional[datetime]) -> Optional[datetime]:
+        if v is None:
+            return v
+        v = to_naive_utc(v)
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        if v <= now:
+            raise ValueError("'until' must be in the future")
+        if v - now > timedelta(days=_MAX_UNTIL_DAYS):
+            raise ValueError(f"'until' must be within {_MAX_UNTIL_DAYS} days from now")
+        return v
 
 
 @router.post("/door")
@@ -60,11 +96,9 @@ def remote_lights(request: Request, body: LightControlRequest):
             actor="api",
             details="off",
         )
-    elif body.action == "off_all":
+    else:  # "off_all" — validated by the model
         light_manager.turn_off_all()
         log_event("REMOTE_LIGHT", actor="api", details="off_all")
-    else:
-        raise HTTPException(status_code=400, detail="action must be 'on', 'off', or 'off_all'")
 
     status = light_manager.get_status()
     # Serialize datetimes in status

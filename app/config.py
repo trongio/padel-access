@@ -21,9 +21,10 @@ def _int_list(val: str) -> list[int]:
 
 
 # ─── App ──────────────────────────────────────────
-APP_HOST: str = os.getenv("APP_HOST", "0.0.0.0")
+APP_HOST: str = os.getenv("APP_HOST", "127.0.0.1")
 APP_PORT: int = int(os.getenv("APP_PORT", "8000"))
-API_KEY: str = os.getenv("API_KEY", "change_me_strong_secret")
+DEFAULT_API_KEY_PLACEHOLDER = "change_me_strong_secret"
+API_KEY: str = os.getenv("API_KEY", DEFAULT_API_KEY_PLACEHOLDER)
 LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
 TZ: str = os.getenv("TZ", "UTC")
 

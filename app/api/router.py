@@ -3,11 +3,12 @@ import secrets
 import time
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Header, Query
+from fastapi import APIRouter, Depends, HTTPException, Header, Query, Request
 from sqlmodel import Session, col, select
 
 from app import config
 from app.api.endpoints import codes, control
+from app.api.limiter import limiter
 from app.core.database import get_session
 from app.core.models import AuditLog, AuditLogRead
 
@@ -18,7 +19,9 @@ _start_time = time.time()
 
 # ─── Auth dependency ──────────────────────────────
 
-async def verify_api_key(authorization: str = Header(...)) -> None:
+async def verify_api_key(authorization: Optional[str] = Header(default=None)) -> None:
+    if authorization is None:
+        raise HTTPException(status_code=401, detail="Missing API key")
     expected = f"Bearer {config.API_KEY}"
     if not secrets.compare_digest(authorization, expected):
         raise HTTPException(status_code=401, detail="Invalid API key")
@@ -48,7 +51,8 @@ api_router.include_router(
 # ─── Health (no auth) ────────────────────────────
 
 @api_router.get("/api/health", tags=["system"])
-def health():
+@limiter.limit("60/minute")
+def health(request: Request):
     return {
         "status": "ok",
         "uptime_seconds": int(time.time() - _start_time),
@@ -58,7 +62,9 @@ def health():
 # ─── Audit logs (auth required) ──────────────────
 
 @api_router.get("/api/logs", tags=["system"], response_model=list[AuditLogRead])
+@limiter.limit("30/minute")
 def get_logs(
+    request: Request,
     limit: int = Query(default=50, le=500),
     event: Optional[str] = None,
     _auth: None = Depends(verify_api_key),

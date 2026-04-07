@@ -9,6 +9,18 @@ from sqlmodel import Field, SQLModel
 _CODE_PATTERN = re.compile(r"^[0-9A-D]+$")
 
 
+def to_naive_utc(dt: datetime) -> datetime:
+    """Normalize a datetime to naive UTC (matches SQLite storage).
+
+    Accepts naive datetimes (assumed UTC) and timezone-aware datetimes
+    (converted to UTC). Always returns a naive UTC datetime so all
+    comparisons across the app are consistent.
+    """
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
+
+
 # ─── Database Tables ──────────────────────────────
 
 
@@ -23,7 +35,9 @@ class AccessCode(SQLModel, table=True):
     label: Optional[str] = None
     max_uses: Optional[int] = Field(default=None)  # None = unlimited, 1 = one-time code
     use_count: int = Field(default=0)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+    )
     is_active: bool = Field(default=True)
 
     @property
@@ -40,10 +54,14 @@ class AuditLog(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     event: str = Field(nullable=False)  # DOOR_OPEN, LIGHT_ON, LIGHT_OFF, CODE_FAIL, REMOTE_DOOR, REMOTE_LIGHT
+    # NOTE: never store the secret code value here. Store the access_code id
+    # (as a string) instead, so leaking the audit log doesn't leak credentials.
     code: Optional[str] = None
     light_ids: Optional[str] = None
     actor: str = Field(nullable=False)  # "keypad" | "api" | "button"
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+    )
     details: Optional[str] = None
 
 
@@ -90,6 +108,11 @@ class AccessCodeCreate(_ValidatedCodeMixin, SQLModel):
     def validate_code(cls, v: str) -> str:
         return _validate_code_str(v)
 
+    @field_validator("valid_from", "valid_until")
+    @classmethod
+    def normalize_dt(cls, v: datetime) -> datetime:
+        return to_naive_utc(v)
+
     @field_validator("valid_until")
     @classmethod
     def validate_dates(cls, v: datetime, info) -> datetime:
@@ -105,6 +128,11 @@ class AccessCodeGenerate(_ValidatedCodeMixin, SQLModel):
     label: Optional[str] = None
     max_uses: Optional[int] = Field(default=1, ge=1)  # defaults to one-time
     code_length: Optional[int] = Field(default=None, ge=4, le=8)  # None = use CODE_LENGTH from .env
+
+    @field_validator("valid_from", "valid_until")
+    @classmethod
+    def normalize_dt(cls, v: datetime) -> datetime:
+        return to_naive_utc(v)
 
     @field_validator("valid_until")
     @classmethod
@@ -129,6 +157,13 @@ class AccessCodeUpdate(SQLModel):
         if v is not None:
             return _validate_code_str(v)
         return v
+
+    @field_validator("valid_from", "valid_until")
+    @classmethod
+    def normalize_dt(cls, v: Optional[datetime]) -> Optional[datetime]:
+        if v is None:
+            return v
+        return to_naive_utc(v)
 
     @field_validator("label")
     @classmethod

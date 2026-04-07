@@ -145,14 +145,23 @@
 				{
 					"name": "Check Code Status",
 					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/codes/check/1234",
-							"host": ["{{base_url}}"],
-							"path": ["api", "codes", "check", "1234"]
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"1234\"\n}"
 						},
-						"description": "Look up a code by its value and get its current status.\n\nReplace `1234` with the actual code to check.\n\n**Possible statuses:**\n- `active` — Code is valid and ready to use\n- `not_yet_valid` — Code exists but validity window hasn't started\n- `expired` — Validity window has passed\n- `used` — One-time code already used\n- `inactive` — Code was deactivated\n- `not_found` — Code doesn't exist\n\nAlso returns `uses_remaining` for limited-use codes."
+						"url": {
+							"raw": "{{base_url}}/api/codes/check",
+							"host": ["{{base_url}}"],
+							"path": ["api", "codes", "check"]
+						},
+						"description": "Look up a code by its value and get its current status. The code is sent in the request body so it never appears in URL paths or access logs.\n\n**Possible statuses:**\n- `active` — Code is valid and ready to use\n- `not_yet_valid` — Code exists but validity window hasn't started\n- `expired` — Validity window has passed\n- `used` — One-time code already used\n- `inactive` — Code was deactivated\n- `not_found` — Code doesn't exist\n\nAlso returns `uses_remaining` for limited-use codes."
 					}
 				},
 				{

@@ -33,6 +33,9 @@ logger = logging.getLogger("padel-access")
 
 # ─── Keypad state ─────────────────────────────────
 
+# Maximum keypad input length (defensive cap against stuck keys / spam).
+_MAX_INPUT_LENGTH = 16
+
 _input_buffer = ""
 _input_lock = threading.Lock()
 _input_timer: threading.Timer | None = None
@@ -42,6 +45,7 @@ _MAX_FAILED_ATTEMPTS = 20
 _LOCKOUT_SECONDS = 30
 _failed_attempts = 0
 _lockout_until: float = 0.0
+_failed_lock = threading.Lock()
 
 # Globals set during init
 _door_relay: RelayController
@@ -81,8 +85,13 @@ def _on_input_timeout() -> None:
 def _on_key_press(key: str) -> None:
     global _input_buffer
 
+    code_to_submit: str | None = None
+
     with _input_lock:
         if key in "0123456789ABCD":
+            if len(_input_buffer) >= _MAX_INPUT_LENGTH:
+                # Cap the buffer to defend against stuck keys / spam input.
+                return
             _buzzer.beep_keypress()
             _input_buffer += key
             _display.show_input("*" * len(_input_buffer))
@@ -96,12 +105,15 @@ def _on_key_press(key: str) -> None:
             _display.show_idle()
 
         elif key == "#":
-            code = _input_buffer
+            code_to_submit = _input_buffer
             _input_buffer = ""
             if _input_timer is not None:
                 _input_timer.cancel()
-            # Release lock before submit (it may take time)
-            _submit_code(code)
+
+    # Submit OUTSIDE the input lock — DB validation can take time and we
+    # don't want to block subsequent keypad events.
+    if code_to_submit is not None:
+        _submit_code(code_to_submit)
 
 
 def _submit_code(code: str) -> None:
@@ -112,18 +124,20 @@ def _submit_code(code: str) -> None:
         return
 
     # Check lockout
-    now = time.time()
-    if now < _lockout_until:
-        remaining = int(_lockout_until - now)
-        _buzzer.beep_error()
-        _display.show_error(f"Locked {remaining}s", duration=2)
-        logger.warning("Keypad locked out — %d seconds remaining", remaining)
-        return
+    with _failed_lock:
+        now = time.time()
+        if now < _lockout_until:
+            remaining = int(_lockout_until - now)
+            _buzzer.beep_error()
+            _display.show_error(f"Locked {remaining}s", duration=2)
+            logger.warning("Keypad locked out — %d seconds remaining", remaining)
+            return
 
     result = validate_code(code)
 
     if result.success:
-        _failed_attempts = 0
+        with _failed_lock:
+            _failed_attempts = 0
         _buzzer.beep_success()
         _display.show_success(result.valid_until)
         _door_relay.pulse(config.DOOR_UNLOCK_DURATION)
@@ -131,30 +145,36 @@ def _submit_code(code: str) -> None:
         for lid in result.light_ids:
             _light_manager.turn_on(lid, result.valid_until)
 
+        # NOTE: log code id, never the secret code value.
+        code_ref = str(result.code_id) if result.code_id is not None else None
         log_event(
             "DOOR_OPEN",
-            code=code,
+            code=code_ref,
             light_ids=json.dumps(result.light_ids),
             actor="keypad",
         )
         log_event(
             "LIGHT_ON",
-            code=code,
+            code=code_ref,
             light_ids=json.dumps(result.light_ids),
             actor="keypad",
         )
     else:
-        _failed_attempts += 1
-        if _failed_attempts >= _MAX_FAILED_ATTEMPTS:
-            _lockout_until = time.time() + _LOCKOUT_SECONDS
-            logger.warning("Keypad locked out for %ds after %d failed attempts", _LOCKOUT_SECONDS, _failed_attempts)
-            _failed_attempts = 0
+        with _failed_lock:
+            _failed_attempts += 1
+            if _failed_attempts >= _MAX_FAILED_ATTEMPTS:
+                _lockout_until = time.time() + _LOCKOUT_SECONDS
+                logger.warning(
+                    "Keypad locked out for %ds after %d failed attempts",
+                    _LOCKOUT_SECONDS, _failed_attempts,
+                )
+                _failed_attempts = 0
 
         _buzzer.beep_error()
         _display.show_error(result.reason)
+        # NOTE: do NOT log the attempted code — it would aid brute force.
         log_event(
             "CODE_FAIL",
-            code=code,
             actor="keypad",
             details=result.reason,
         )
@@ -192,6 +212,14 @@ def _shutdown(signum=None, frame=None) -> None:
 
 def main() -> None:
     global _door_relay, _buzzer, _display, _light_manager, _keypad, _exit_button, _scheduler
+
+    # Refuse to start with the placeholder API key — would leave the system wide open.
+    if config.API_KEY == config.DEFAULT_API_KEY_PLACEHOLDER or not config.API_KEY:
+        logger.error(
+            "API_KEY is missing or still set to the default placeholder. "
+            "Set a strong value in .env (e.g. `openssl rand -hex 32`) before starting."
+        )
+        sys.exit(1)
 
     logger.info("Starting Padel Access Control System")
 

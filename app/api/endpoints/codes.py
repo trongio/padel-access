@@ -3,20 +3,34 @@ import logging
 import secrets
 from datetime import datetime, timezone
 
-def _utcnow() -> datetime:
-    """Return current UTC time as naive datetime (matches SQLite storage)."""
-    return datetime.now(timezone.utc).replace(tzinfo=None)
-
 from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from app import config
 from app.api.limiter import limiter
 from app.core.database import get_session, log_event
-from app.core.models import AccessCode, AccessCodeCreate, AccessCodeGenerate, AccessCodeRead, AccessCodeStatus, AccessCodeUpdate
+from app.core.models import (
+    AccessCode,
+    AccessCodeCreate,
+    AccessCodeGenerate,
+    AccessCodeRead,
+    AccessCodeStatus,
+    AccessCodeUpdate,
+)
+
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def _utcnow() -> datetime:
+    """Return current UTC time as naive datetime (matches SQLite storage)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+class CodeCheckRequest(BaseModel):
+    code: str
 
 
 def _to_read(ac: AccessCode) -> AccessCodeRead:
@@ -125,9 +139,14 @@ def list_codes(
     return [_to_read(ac) for ac in codes]
 
 
-@router.get("/check/{code}", response_model=AccessCodeStatus)
+@router.post("/check", response_model=AccessCodeStatus)
 @limiter.limit("10/minute")
-def check_code(code: str, request: Request, session: Session = Depends(get_session)):
+def check_code(body: CodeCheckRequest, request: Request, session: Session = Depends(get_session)):
+    """Check the status of a code.
+
+    Uses POST + body so the code never appears in URL paths or access logs.
+    """
+    code = body.code
     ac = session.exec(select(AccessCode).where(AccessCode.code == code)).first()
     if not ac:
         return AccessCodeStatus(code=code, status="not_found")
@@ -183,6 +202,15 @@ def update_code(
         raise HTTPException(status_code=404, detail="Code not found")
 
     update_data = body.model_dump(exclude_unset=True)
+
+    # If renaming the code, ensure the new value isn't already taken.
+    if "code" in update_data and update_data["code"] != ac.code:
+        clash = session.exec(
+            select(AccessCode).where(AccessCode.code == update_data["code"])
+        ).first()
+        if clash is not None:
+            raise HTTPException(status_code=409, detail="Code already exists")
+
     if "light_ids" in update_data:
         update_data["light_ids"] = json.dumps(update_data["light_ids"])
 
@@ -220,15 +248,19 @@ def delete_code(
     session.commit()
     session.refresh(ac)
 
-    # Cancel any pending light jobs for this code's lights
-    scheduler = request.app.state.scheduler
+    # Actually turn the lights off (LightManager.turn_off also cancels its
+    # auto-off scheduler job, so we don't need to do that separately).
+    light_manager = request.app.state.light_manager
     for lid in ac.light_ids_list:
-        job_id = f"light_off_{lid}"
-        try:
-            scheduler.remove_job(job_id)
-        except Exception:
-            pass
+        light_manager.turn_off(lid)
 
-    log_event("LIGHT_OFF", code=ac.code, light_ids=ac.light_ids, actor="api", details="code deactivated")
+    # NOTE: code id, not the secret value.
+    log_event(
+        "LIGHT_OFF",
+        code=str(ac.id),
+        light_ids=ac.light_ids,
+        actor="api",
+        details="code deactivated",
+    )
     logger.info("Deactivated access code id=%d", ac.id)
     return _to_read(ac)

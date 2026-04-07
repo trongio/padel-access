@@ -54,16 +54,20 @@ def log_event(
     actor: str = "system",
     details: Optional[str] = None,
 ) -> None:
-    """Write an audit log entry."""
+    """Write an audit log entry.
+
+    Note: `code` here is the access_code row id (as a string), NOT the secret
+    code value. Callers must never pass the plaintext code — see AuditLog.
+    """
     entry = AuditLog(
         event=event,
         code=code,
         light_ids=light_ids,
         actor=actor,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(timezone.utc).replace(tzinfo=None),
         details=details,
     )
     with Session(engine) as session:
         session.add(entry)
         session.commit()
-    logger.debug("Audit: %s actor=%s code=%s", event, actor, code)
+    logger.debug("Audit: %s actor=%s code_id=%s", event, actor, code)
