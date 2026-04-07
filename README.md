@@ -86,13 +86,13 @@ A [Postman collection](Padel_Access_API.postman_collection.json) is included for
 ### Health Check
 
 ```bash
-curl https://padel.hackerman.ge/api/health
+curl https://your-host.example.com/api/health
 ```
 
 ### Create Access Code
 
 ```bash
-curl -X POST https://padel.hackerman.ge/api/codes \
+curl -X POST https://your-host.example.com/api/codes \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -110,7 +110,7 @@ Set `max_uses` to `1` for a one-time code, or `null` for unlimited uses.
 ### Generate Random Code
 
 ```bash
-curl -X POST https://padel.hackerman.ge/api/codes/generate \
+curl -X POST https://your-host.example.com/api/codes/generate \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -128,14 +128,14 @@ Returns the generated code in the response. Ideal for booking system integration
 ### List Codes
 
 ```bash
-curl https://padel.hackerman.ge/api/codes?active_only=true \
+curl https://your-host.example.com/api/codes?active_only=true \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
 ### Remote Door Unlock
 
 ```bash
-curl -X POST https://padel.hackerman.ge/api/control/door \
+curl -X POST https://your-host.example.com/api/control/door \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -143,19 +143,19 @@ curl -X POST https://padel.hackerman.ge/api/control/door \
 
 ```bash
 # Turn on (until = auto-off time)
-curl -X POST https://padel.hackerman.ge/api/control/lights \
+curl -X POST https://your-host.example.com/api/control/lights \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"light_ids": [1, 2], "action": "on", "until": "2026-04-05T22:00:00"}'
 
 # Turn off specific zones
-curl -X POST https://padel.hackerman.ge/api/control/lights \
+curl -X POST https://your-host.example.com/api/control/lights \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"light_ids": [1], "action": "off"}'
 
 # Emergency: turn off all lights
-curl -X POST https://padel.hackerman.ge/api/control/lights \
+curl -X POST https://your-host.example.com/api/control/lights \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"action": "off_all"}'
@@ -164,14 +164,14 @@ curl -X POST https://padel.hackerman.ge/api/control/lights \
 ### Relay Status
 
 ```bash
-curl https://padel.hackerman.ge/api/control/status \
+curl https://your-host.example.com/api/control/status \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
 ### Audit Logs
 
 ```bash
-curl "https://padel.hackerman.ge/api/logs?limit=50&event=DOOR_OPEN" \
+curl "https://your-host.example.com/api/logs?limit=50&event=DOOR_OPEN" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 

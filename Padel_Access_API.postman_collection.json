@@ -1,13 +1,13 @@
 {
 	"info": {
 		"name": "Padel Access Control API",
-		"description": "API collection for the Padel Facility Access Control System.\n\n## Setup\n1. Go to the **Variables** tab of this collection\n2. Set `base_url` to your server URL (e.g. `https://padel.hackerman.ge`)\n3. Set `api_key` to your API key\n\n## Endpoints\n- **Health** — No auth required\n- **Codes** — CRUD for access codes\n- **Control** — Remote door unlock and light control\n- **Logs** — Audit log viewer",
+		"description": "API collection for the Padel Facility Access Control System.\n\n## Setup\n1. Go to the **Variables** tab of this collection\n2. Set `base_url` to your server URL (e.g. `https://your-host.example.com`)\n3. Set `api_key` to your API key\n\n## Endpoints\n- **Health** — No auth required\n- **Codes** — CRUD for access codes\n- **Control** — Remote door unlock and light control\n- **Logs** — Audit log viewer",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
 		{
 			"key": "base_url",
-			"value": "https://padel.hackerman.ge",
+			"value": "https://your-host.example.com",
 			"type": "string"
 		},
 		{
