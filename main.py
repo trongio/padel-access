@@ -193,7 +193,9 @@ _shutdown_event = threading.Event()
 def _shutdown(signum=None, frame=None) -> None:
     logger.info("Shutting down...")
     _reset_input()
-    _light_manager.turn_off_all()
+    # Drop the relays to OFF for safety, but keep the persisted scheduler
+    # jobs so an in-progress booking can be restored on the next startup.
+    _light_manager.shutdown_relays_keep_jobs()
     _door_relay.off()
     _display.show_message(config.LANG["shutting_down"], duration=2)
     _scheduler.shutdown(wait=False)

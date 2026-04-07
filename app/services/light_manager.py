@@ -81,6 +81,19 @@ class LightManager:
             for light_id in list(self._relays.keys()):
                 self._turn_off_locked(light_id)
 
+    def shutdown_relays_keep_jobs(self) -> None:
+        """
+        For graceful service shutdown: physically turn off every relay but
+        leave the scheduler's persisted `light_off_<id>` jobs in place.
+
+        This is what allows `restore_light_jobs` to bring an in-progress
+        booking's lights back on after a Pi reboot or `systemctl restart`,
+        rather than treating shutdown as an explicit "client is done".
+        """
+        with self._lock:
+            for relay in self._relays.values():
+                relay.off()
+
     def get_status(self) -> dict:
         status = {}
         for light_id, relay in self._relays.items():
