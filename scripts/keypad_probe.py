@@ -15,15 +15,34 @@ Procedure:
 By default, the 7 pins from .env are probed. To probe a different set:
        sudo python3 scripts/keypad_probe.py 5 6 13 19 12 16 20
 """
+import os
 import sys
 import time
 from pathlib import Path
 
+# If RPi.GPIO is missing in the current interpreter, try to re-exec under
+# the project venv. The service runs from /opt/padel-access/venv, but a
+# clone in $HOME or anywhere else will also have ./venv or ./.venv.
+def _reexec_in_venv() -> None:
+    here = Path(__file__).resolve().parent.parent
+    candidates = [
+        here / "venv" / "bin" / "python",
+        here / ".venv" / "bin" / "python",
+        Path("/opt/padel-access/venv/bin/python"),
+    ]
+    for py in candidates:
+        if py.exists() and py.resolve() != Path(sys.executable).resolve():
+            os.execv(str(py), [str(py), *sys.argv])
+
 try:
     import RPi.GPIO as GPIO
 except ImportError:
-    print("ERROR: RPi.GPIO is not installed in this Python environment.")
-    print("       Activate the project venv or run: pip install RPi.GPIO")
+    _reexec_in_venv()
+    # If we get here, no venv with RPi.GPIO was found.
+    print("ERROR: RPi.GPIO is not installed in this Python environment, and")
+    print("       no project venv was found at:")
+    print("         ./venv, ./.venv, or /opt/padel-access/venv")
+    print("       Either activate the venv or run: pip install RPi.GPIO")
     sys.exit(1)
 
 
