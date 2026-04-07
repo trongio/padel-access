@@ -1,7 +1,7 @@
 fastapi
 uvicorn[standard]
 sqlmodel
-RPi.GPIO
+rpi-lgpio  # drop-in RPi.GPIO replacement; the original 0.7.1 fails add_event_detect on Linux 6.x
 luma.oled
 Pillow
 apscheduler
