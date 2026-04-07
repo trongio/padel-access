@@ -36,7 +36,7 @@ class KeypadManager:
             self._keypad.registerKeyPressHandler(self._handle_key)
             logger.info("Keypad initialized (rows=%s, cols=%s)", row_pins, col_pins)
         except Exception:
-            logger.warning("Keypad init failed — running without keypad")
+            logger.exception("Keypad init failed — running without keypad")
 
     def _handle_key(self, key: str) -> None:
         try:

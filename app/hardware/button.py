@@ -28,7 +28,7 @@ class ExitButton:
             self._available = True
             logger.info("Exit button on GPIO %d initialized", self._pin)
         except Exception:
-            logger.warning("Exit button init failed on GPIO %d — running without it", self._pin)
+            logger.exception("Exit button init failed on GPIO %d — running without it", self._pin)
 
     def _handle_press(self, channel: int) -> None:
         try:
