@@ -33,9 +33,6 @@ logger = logging.getLogger("padel-access")
 
 # ─── Keypad state ─────────────────────────────────
 
-# Maximum keypad input length (defensive cap against stuck keys / spam).
-_MAX_INPUT_LENGTH = 16
-
 _input_buffer = ""
 _input_lock = threading.Lock()
 _input_timer: threading.Timer | None = None
@@ -89,8 +86,8 @@ def _on_key_press(key: str) -> None:
 
     with _input_lock:
         if key in "0123456789":
-            if len(_input_buffer) >= _MAX_INPUT_LENGTH:
-                # Cap the buffer to defend against stuck keys / spam input.
+            if len(_input_buffer) >= config.CODE_LENGTH:
+                # Already at the configured code length — ignore further digits.
                 return
             _buzzer.beep_keypress()
             _input_buffer += key
