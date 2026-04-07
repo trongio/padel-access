@@ -159,6 +159,7 @@ LOG_LEVEL=INFO
 TZ=${INPUT_TZ}
 APP_LANG=${INPUT_LANG}
 CODE_LENGTH=${INPUT_CODE_LENGTH}
+MASK_CODE_INPUT=true
 
 # ─── Display ──────────────────────────────────────
 DISPLAY_IDLE_TEXT=${INPUT_IDLE_TEXT}

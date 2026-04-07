@@ -94,7 +94,8 @@ def _on_key_press(key: str) -> None:
                 return
             _buzzer.beep_keypress()
             _input_buffer += key
-            _display.show_input("*" * len(_input_buffer))
+            shown = "*" * len(_input_buffer) if config.MASK_CODE_INPUT else _input_buffer
+            _display.show_input(shown)
             _start_input_timeout()
 
         elif key == "*":

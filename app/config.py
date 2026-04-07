@@ -31,6 +31,8 @@ TZ: str = os.getenv("TZ", "UTC")
 # ─── Language & Display ───────────────────────────
 APP_LANG: str = os.getenv("APP_LANG", "EN")  # EN or KA
 CODE_LENGTH: int = int(os.getenv("CODE_LENGTH", "6"))  # 4-8 digits
+# true: mask digits as ***  false: show entered digits as-is on the display
+MASK_CODE_INPUT: bool = _bool(os.getenv("MASK_CODE_INPUT", "true"), default=True)
 
 _TRANSLATIONS = {
     "EN": {
