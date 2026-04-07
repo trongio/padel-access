@@ -88,7 +88,7 @@ def _on_key_press(key: str) -> None:
     code_to_submit: str | None = None
 
     with _input_lock:
-        if key in "0123456789ABCD":
+        if key in "0123456789":
             if len(_input_buffer) >= _MAX_INPUT_LENGTH:
                 # Cap the buffer to defend against stuck keys / spam input.
                 return

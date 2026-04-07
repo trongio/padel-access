@@ -6,15 +6,15 @@ from pad4pi.rpi_gpio import KeypadFactory
 logger = logging.getLogger(__name__)
 
 KEYPAD_LAYOUT = [
-    ["1", "2", "3", "A"],
-    ["4", "5", "6", "B"],
-    ["7", "8", "9", "C"],
-    ["*", "0", "#", "D"],
+    ["1", "2", "3"],
+    ["4", "5", "6"],
+    ["7", "8", "9"],
+    ["*", "0", "#"],
 ]
 
 
 class KeypadManager:
-    """4x4 matrix keypad scanner using pad4pi."""
+    """3x4 matrix keypad scanner using pad4pi (4 rows x 3 cols, 7 pins)."""
 
     def __init__(
         self,

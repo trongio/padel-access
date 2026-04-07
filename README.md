@@ -6,7 +6,7 @@ Raspberry Pi 4 (Ubuntu Server 24) based access control for a padel facility. Con
 
 ## Features
 
-- 4x4 keypad code entry with OLED display feedback
+- 3x4 keypad code entry with OLED display feedback
 - Door lock relay (12V) with configurable unlock duration
 - 2 light zone relays (220V) with scheduled auto-off
 - One-time and multi-use access codes
@@ -27,7 +27,7 @@ Raspberry Pi 4 (Ubuntu Server 24) based access control for a padel facility. Con
 | 1 | 1-Ch 5V Relay Module (AR0310) | GPIO 17 | Door lock — 12V |
 | 2 | 12-Ch 5V Relay Module — Relay 1 | GPIO 27 | Light zone 1 — 220V |
 | 3 | 12-Ch 5V Relay Module — Relay 2 | GPIO 22 | Light zone 2 — 220V |
-| 4 | 4x4 Matrix Keypad | GPIO 5,6,13,19 (rows) / 12,16,20,21 (cols) | Code input |
+| 4 | 3x4 Matrix Keypad (12 keys, 7 pins) | GPIO 5,6,13,19 (rows) / 12,16,20 (cols) | Code input |
 | 5 | 0.96" OLED I2C SSD1306 (128x64) | I2C SDA=GPIO2, SCL=GPIO3 | Display |
 | 6 | Exit Button (NO momentary) | GPIO 26 (pull-up) | Door release from inside |
 | 7 | Active Buzzer (5V) | GPIO 24 | Audio feedback |
@@ -195,7 +195,7 @@ padel-access/
 │   │   └── scheduler.py     # APScheduler with job persistence
 │   ├── hardware/
 │   │   ├── relay.py         # Thread-safe GPIO relay controller
-│   │   ├── keypad.py        # 4x4 matrix keypad (pad4pi)
+│   │   ├── keypad.py        # 3x4 matrix keypad (pad4pi)
 │   │   ├── display.py       # OLED SSD1306 queue-based display
 │   │   ├── buzzer.py        # Active buzzer with beep patterns
 │   │   └── button.py        # Exit button with edge detection

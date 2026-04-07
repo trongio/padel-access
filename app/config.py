@@ -87,7 +87,7 @@ LIGHT_RELAY_1_GPIO: int = int(os.getenv("LIGHT_RELAY_1_GPIO", "27"))
 LIGHT_RELAY_2_GPIO: int = int(os.getenv("LIGHT_RELAY_2_GPIO", "22"))
 
 KEYPAD_ROW_PINS: list[int] = _int_list(os.getenv("KEYPAD_ROW_PINS", "5,6,13,19"))
-KEYPAD_COL_PINS: list[int] = _int_list(os.getenv("KEYPAD_COL_PINS", "12,16,20,21"))
+KEYPAD_COL_PINS: list[int] = _int_list(os.getenv("KEYPAD_COL_PINS", "12,16,20"))
 
 # Light relay mapping: light_id -> GPIO pin
 LIGHT_RELAYS: dict[int, int] = {
