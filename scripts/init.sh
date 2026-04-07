@@ -16,7 +16,7 @@ echo "╚═══════════════════════�
 echo ""
 
 # ─── 1. System packages ───────────────────────────
-echo "[1/8] Installing system dependencies..."
+echo "[1/9] Installing system dependencies..."
 apt-get update -qq
 apt-get install -y \
   python3-pip \
@@ -37,7 +37,7 @@ apt-get install -y \
 echo "    ✓ System dependencies installed"
 
 # ─── 2. Enable I2C (Ubuntu — NOT raspi-config) ────
-echo "[2/8] Enabling I2C..."
+echo "[2/9] Enabling I2C..."
 CONFIG_FILE=/boot/firmware/config.txt
 
 # Enable i2c-arm if not already set
@@ -60,14 +60,14 @@ if getent group i2c > /dev/null 2>&1; then
 fi
 
 # ─── 3. Python virtual environment ────────────────
-echo "[3/8] Setting up Python virtual environment..."
+echo "[3/9] Setting up Python virtual environment..."
 python3 -m venv "$INSTALL_DIR/venv"
 "$INSTALL_DIR/venv/bin/pip" install --upgrade pip --quiet
 "$INSTALL_DIR/venv/bin/pip" install -r "$INSTALL_DIR/requirements.txt" --quiet
 echo "    ✓ Python venv ready at $INSTALL_DIR/venv"
 
 # ─── 4. Install cloudflared ───────────────────────
-echo "[4/8] Installing cloudflared..."
+echo "[4/9] Installing cloudflared..."
 if ! command -v cloudflared &> /dev/null; then
   ARCH=$(dpkg --print-architecture)
   if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
@@ -86,7 +86,7 @@ else
 fi
 
 # ─── 5. Interactive .env setup ────────────────────
-echo "[5/8] Configuring .env..."
+echo "[5/9] Configuring .env..."
 echo ""
 
 if [ -f "$INSTALL_DIR/.env" ]; then
@@ -190,22 +190,44 @@ EOF
   echo "    ✓ .env written to $INSTALL_DIR/.env"
 fi
 
-# ─── 6. Create directories ────────────────────────
-echo "[6/8] Creating directories..."
+# ─── 6. Keypad probe ──────────────────────────────
+echo "[6/9] Keypad probe..."
+echo ""
+echo "    The keypad probe auto-detects which GPIO pins are wired to"
+echo "    each row/column of your 3x4 matrix keypad and writes the"
+echo "    result to .env. You'll be asked to press 6 keys in order."
+echo ""
+echo "    Skip this if no keypad is wired up yet — you can re-run it"
+echo "    later with:"
+echo "        sudo $INSTALL_DIR/venv/bin/python $INSTALL_DIR/scripts/keypad_probe.py"
+echo ""
+read -rp "    Run keypad probe now? [Y/n]: " RUN_PROBE
+if [[ ! "$RUN_PROBE" =~ ^[Nn]$ ]]; then
+  if "$INSTALL_DIR/venv/bin/python" "$INSTALL_DIR/scripts/keypad_probe.py"; then
+    echo "    ✓ Keypad pins detected and saved to .env"
+  else
+    echo "    ⚠ Keypad probe did not complete — re-run it later if needed."
+  fi
+else
+  echo "    Skipped — keeping default keypad pins from .env."
+fi
+
+# ─── 7. Create directories ────────────────────────
+echo "[7/9] Creating directories..."
 mkdir -p "$INSTALL_DIR/logs"
 mkdir -p "$INSTALL_DIR/data"
 chmod 750 "$INSTALL_DIR/data"
 echo "    ✓ logs/ and data/ created"
 
-# ─── 7. Install systemd services ─────────────────
-echo "[7/8] Installing systemd services..."
+# ─── 8. Install systemd services ─────────────────
+echo "[8/9] Installing systemd services..."
 cp "$INSTALL_DIR/systemd/padel-access.service" /etc/systemd/system/
 cp "$INSTALL_DIR/systemd/padel-tunnel.service" /etc/systemd/system/
 systemctl daemon-reload
 echo "    ✓ systemd services installed"
 
-# ─── 8. Tailscale ────────────────────────────────
-echo "[8/8] Installing Tailscale (SSH remote access)..."
+# ─── 9. Tailscale ────────────────────────────────
+echo "[9/9] Installing Tailscale (SSH remote access)..."
 echo ""
 read -rp "    Install Tailscale for remote SSH access? [Y/n]: " INSTALL_TAILSCALE
 if [[ ! "$INSTALL_TAILSCALE" =~ ^[Nn]$ ]]; then
