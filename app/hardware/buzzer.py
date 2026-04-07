@@ -53,5 +53,12 @@ class Buzzer:
         self.beep(count=1, on_ms=100, off_ms=0)
 
     def cleanup(self) -> None:
-        if self._enabled:
+        if not self._enabled:
+            return
+        # Best-effort: by the time shutdown reaches us, other hardware
+        # modules (e.g. pad4pi via _keypad.cleanup) may have already
+        # released the GPIO chip. Don't let a final pin write crash exit.
+        try:
             GPIO.output(self._pin, GPIO.LOW)
+        except Exception:
+            pass
