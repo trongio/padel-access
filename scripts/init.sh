@@ -224,7 +224,9 @@ echo "[8/9] Installing systemd services..."
 cp "$INSTALL_DIR/systemd/padel-access.service" /etc/systemd/system/
 cp "$INSTALL_DIR/systemd/padel-tunnel.service" /etc/systemd/system/
 systemctl daemon-reload
-echo "    ✓ systemd services installed"
+systemctl enable --now padel-access.service padel-tunnel.service
+echo "    ✓ padel-access: $(systemctl is-active padel-access)"
+echo "    ✓ padel-tunnel: $(systemctl is-active padel-tunnel)"
 
 # ─── 9. Tailscale ────────────────────────────────
 echo "[9/9] Installing Tailscale (SSH remote access)..."
@@ -264,10 +266,14 @@ echo "╔═══════════════════════�
 echo "║   Init complete!                         ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
+echo "  Services are enabled and running — they will auto-start on boot."
+echo ""
 echo "  Next steps:"
 echo "  1. Review/edit config: nano $INSTALL_DIR/.env"
+echo "     (then: sudo systemctl restart padel-access)"
 echo "  2. If I2C was just enabled: sudo reboot"
 echo "  3. After reboot verify I2C: i2cdetect -y 1"
 echo "  4. If Tailscale not yet authed: sudo tailscale up --ssh"
-echo "  5. Start the system:   sudo bash scripts/start.sh"
+echo "  5. App logs:    journalctl -u padel-access -f"
+echo "     Tunnel logs: journalctl -u padel-tunnel -f"
 echo ""
