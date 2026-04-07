@@ -35,7 +35,7 @@ CODE_LENGTH: int = int(os.getenv("CODE_LENGTH", "6"))  # 4-8 digits
 _TRANSLATIONS = {
     "EN": {
         "enter_code": "Enter Code:",
-        "access_granted": "Access Granted",
+        "access_granted": "Welcome",
         "error": "Error",
         "invalid_code": "Invalid code",
         "code_expired": "Code expired",
@@ -46,7 +46,7 @@ _TRANSLATIONS = {
     },
     "KA": {
         "enter_code": "შეიყვანეთ კოდი:",
-        "access_granted": "წვდომა მინიჭებულია",
+        "access_granted": "მობრძანდით",
         "error": "შეცდომა",
         "invalid_code": "არასწორი კოდი",
         "code_expired": "კოდი ვადაგასულია",
