@@ -8,6 +8,8 @@ from sqlmodel import Session, select
 from app.core.database import engine
 from app.core.models import AccessCode, AuditLog
 
+LIGHT_OFF_JOB_PREFIX = "light_off_"
+
 logger = logging.getLogger(__name__)
 
 # Retention periods
@@ -29,23 +31,31 @@ def create_scheduler(db_url: str) -> BackgroundScheduler:
 
 
 def restore_light_jobs(scheduler: BackgroundScheduler, light_manager) -> None:
-    """On startup, re-schedule turn-off jobs for all active codes still in their validity window."""
-    now = _utcnow_naive()
+    """
+    On startup, re-enable lights that were actively in use when the service
+    stopped. We detect this via persisted `light_off_<id>` jobs in the
+    APScheduler store: each one represents a light that the keypad turned on
+    and that has not yet reached its scheduled auto-off time.
+
+    A code being merely active and within its validity window does NOT cause
+    its lights to come on — that only happens when a client enters the code
+    on the keypad.
+    """
     count = 0
+    for job in scheduler.get_jobs():
+        if not job.id.startswith(LIGHT_OFF_JOB_PREFIX):
+            continue
+        try:
+            light_id = int(job.id[len(LIGHT_OFF_JOB_PREFIX):])
+        except ValueError:
+            logger.warning("Skipping malformed light job id %r", job.id)
+            continue
+        if job.next_run_time is None:
+            continue
+        light_manager.turn_on(light_id, job.next_run_time)
+        count += 1
 
-    with Session(engine) as session:
-        statement = select(AccessCode).where(
-            AccessCode.is_active == True,  # noqa: E712
-            AccessCode.valid_until > now,
-        )
-        codes = session.exec(statement).all()
-
-        for code in codes:
-            for light_id in code.light_ids_list:
-                light_manager.turn_on(light_id, code.valid_until)
-                count += 1
-
-    logger.info("Restored %d light jobs from %d active codes", count, len(codes))
+    logger.info("Restored %d in-progress light(s) from scheduler store", count)
 
 
 def cleanup_old_data() -> None:

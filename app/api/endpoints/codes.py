@@ -84,13 +84,6 @@ def create_code(
     session.commit()
     session.refresh(ac)
 
-    # If code is already in its validity window, activate lights now
-    now = _utcnow()
-    if ac.valid_from <= now < ac.valid_until:
-        light_manager = request.app.state.light_manager
-        for lid in body.light_ids:
-            light_manager.turn_on(lid, ac.valid_until)
-
     logger.info("Created access code id=%d label=%s", ac.id, ac.label)
     return _to_read(ac)
 
@@ -116,12 +109,6 @@ def generate_code(
     session.add(ac)
     session.commit()
     session.refresh(ac)
-
-    now = _utcnow()
-    if ac.valid_from <= now < ac.valid_until:
-        light_manager = request.app.state.light_manager
-        for lid in body.light_ids:
-            light_manager.turn_on(lid, ac.valid_until)
 
     logger.info("Generated access code id=%d label=%s", ac.id, ac.label)
     return _to_read(ac)
@@ -221,12 +208,15 @@ def update_code(
     session.commit()
     session.refresh(ac)
 
-    # Reschedule light jobs if valid_until changed
+    # If valid_until changed AND a light is currently on for this code (i.e.
+    # the keypad already activated it), reschedule its existing turn-off job
+    # to the new time. Do NOT force the light on if it isn't already on —
+    # creating/editing a code must never light up the room by itself.
     if "valid_until" in update_data and ac.is_active:
         light_manager = request.app.state.light_manager
-        now = _utcnow()
-        if ac.valid_from <= now < ac.valid_until:
-            for lid in ac.light_ids_list:
+        for lid in ac.light_ids_list:
+            status = light_manager.get_status().get(lid)
+            if status and status["on"]:
                 light_manager.turn_on(lid, ac.valid_until)
 
     logger.info("Updated access code id=%d", ac.id)
