@@ -59,12 +59,14 @@ class DisplayManager:
         self._idle = True
         self._queue.put({"type": "idle"})
 
-    def show_input(self, masked: str) -> None:
+    def show_input(self, text: str) -> None:
+        """Render the current keypad input as-is. Caller decides whether to
+        pre-mask the digits (see config.MASK_CODE_INPUT)."""
         if not self._available:
             return
         self._cancel_timer()
         self._idle = False
-        self._queue.put({"type": "input", "masked": masked})
+        self._queue.put({"type": "input", "text": text})
 
     def show_success(self, valid_until: datetime) -> None:
         if not self._available:
@@ -133,7 +135,7 @@ class DisplayManager:
         if cmd_type == "idle":
             self._draw_idle(draw)
         elif cmd_type == "input":
-            self._draw_input(draw, cmd["masked"])
+            self._draw_input(draw, cmd["text"])
         elif cmd_type == "success":
             self._draw_success(draw, cmd["until"])
         elif cmd_type == "error":
@@ -154,10 +156,11 @@ class DisplayManager:
         self._center(draw, now.strftime("%H:%M:%S"), 18, self._font_lg)
         self._center(draw, config.format_date(now), 48, self._font_sm)
 
-    def _draw_input(self, draw: ImageDraw.ImageDraw, masked: str) -> None:
+    def _draw_input(self, draw: ImageDraw.ImageDraw, text: str) -> None:
         self._center(draw, config.LANG["enter_code"], 6, self._font_md)
-        dots = " ".join("*" for _ in masked) if masked else ""
-        self._center(draw, dots, 30, self._font_lg)
+        # Space out the characters so the row reads cleanly on the OLED.
+        spaced = " ".join(text) if text else ""
+        self._center(draw, spaced, 30, self._font_lg)
 
     def _draw_success(self, draw: ImageDraw.ImageDraw, until: datetime) -> None:
         local_until = until.astimezone(self._tz)
