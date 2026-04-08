@@ -59,11 +59,18 @@ class LightControlRequest(BaseModel):
 @router.post("/door")
 @limiter.limit("5/minute")
 def remote_door(request: Request):
-    door_relay = request.app.state.door_relay
     buzzer = request.app.state.buzzer
+    system_mode = request.app.state.system_mode
     duration = config.DOOR_UNLOCK_DURATION
 
-    door_relay.pulse(duration)
+    pulsed = system_mode.unlock_door(actor="api", duration=duration)
+    if not pulsed:
+        # Free mode keeps the door open already, so a pulse would actually
+        # de-energize the relay after `duration`. Surface that to the caller
+        # rather than silently lying.
+        logger.info("Remote door unlock ignored (free mode)")
+        return {"status": "free_mode_noop", "mode": system_mode.mode}
+
     buzzer.beep_success()
 
     # Tell the door-open alarm to re-check after the lock re-engages.

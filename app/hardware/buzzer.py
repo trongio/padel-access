@@ -24,6 +24,26 @@ class Buzzer:
             GPIO.setup(self._pin, GPIO.OUT, initial=GPIO.LOW)
             logger.info("Buzzer on GPIO %d initialized", self._pin)
 
+    def set_enabled(self, enabled: bool) -> None:
+        """Toggle the buzzer at runtime.
+
+        Lazily configures the GPIO pin if going from disabled to enabled,
+        because `__init__` skips `GPIO.setup` when the buzzer starts disabled.
+        Stops any in-flight alarm and drives the pin LOW when disabling.
+        """
+        if enabled and not self._enabled:
+            _ensure_gpio()
+            GPIO.setup(self._pin, GPIO.OUT, initial=GPIO.LOW)
+            logger.info("Buzzer on GPIO %d enabled at runtime", self._pin)
+        elif not enabled and self._enabled:
+            self.stop_alarm()
+            try:
+                GPIO.output(self._pin, GPIO.LOW)
+            except Exception:
+                pass
+            logger.info("Buzzer on GPIO %d disabled at runtime", self._pin)
+        self._enabled = enabled
+
     def beep(self, count: int = 1, on_ms: int = 100, off_ms: int = 100) -> None:
         if not self._enabled:
             return

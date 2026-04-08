@@ -81,6 +81,39 @@ class LightManager:
             for light_id in list(self._relays.keys()):
                 self._turn_off_locked(light_id)
 
+    def turn_on_indefinite(self, light_id: int) -> None:
+        """Energize a light relay with no scheduled turn-off.
+
+        Used by free mode, where the lights are held on until the mode is
+        explicitly left. Removes any pre-existing `light_off_<id>` job so a
+        previously scheduled booking won't yank the light back off.
+        """
+        with self._lock:
+            relay = self._relays.get(light_id)
+            if relay is None:
+                logger.warning("Unknown light_id %d", light_id)
+                return
+            job_id = f"light_off_{light_id}"
+            try:
+                self._scheduler.remove_job(job_id)
+            except Exception:
+                pass
+            relay.on()
+            logger.info("Light %d ON (indefinite / free mode)", light_id)
+
+    def turn_on_indefinite_all(self) -> None:
+        """Energize every known light relay indefinitely. See `turn_on_indefinite`."""
+        with self._lock:
+            for light_id in list(self._relays.keys()):
+                relay = self._relays[light_id]
+                job_id = f"light_off_{light_id}"
+                try:
+                    self._scheduler.remove_job(job_id)
+                except Exception:
+                    pass
+                relay.on()
+                logger.info("Light %d ON (indefinite / free mode)", light_id)
+
     def shutdown_relays_keep_jobs(self) -> None:
         """
         For graceful service shutdown: physically turn off every relay but

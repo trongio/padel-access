@@ -1,7 +1,7 @@
 {
 	"info": {
 		"name": "Padel Access Control API",
-		"description": "API collection for the Padel Facility Access Control System.\n\n## Setup\n1. Go to the **Variables** tab of this collection\n2. Set `base_url` to your server URL (e.g. `https://your-host.example.com`)\n3. Set `api_key` to your API key\n\n## Endpoints\n- **Health** — No auth required\n- **Codes** — CRUD for access codes\n- **Control** — Remote door unlock and light control\n- **Logs** — Audit log viewer",
+		"description": "API collection for the Padel Facility Access Control System.\n\n## Setup\n1. Go to the **Variables** tab of this collection\n2. Set `base_url` to your server URL (e.g. `https://your-host.example.com`)\n3. Set `api_key` to your API key\n\n## Endpoints\n- **System** — Health, audit logs, settings, operating mode, reboot\n- **Codes** — CRUD for access codes (incl. list-with-status)\n- **Control** — Remote door unlock and light control",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -64,16 +64,108 @@
 								{
 									"key": "event",
 									"value": "DOOR_OPEN",
-									"description": "Filter by event type: DOOR_OPEN, LIGHT_ON, LIGHT_OFF, CODE_FAIL, REMOTE_DOOR, REMOTE_LIGHT",
+									"description": "Filter by event type: DOOR_OPEN, LIGHT_ON, LIGHT_OFF, CODE_FAIL, REMOTE_DOOR, REMOTE_LIGHT, SETTINGS_UPDATE, MODE_CHANGE, SYSTEM_REBOOT",
 									"disabled": true
 								}
 							]
 						},
-						"description": "Retrieve audit log entries. Optionally filter by event type.\n\n**Event types:**\n- `DOOR_OPEN` — Door was unlocked (keypad or button)\n- `LIGHT_ON` / `LIGHT_OFF` — Lights toggled\n- `CODE_FAIL` — Invalid code entered\n- `REMOTE_DOOR` — Door unlocked via API\n- `REMOTE_LIGHT` — Lights controlled via API"
+						"description": "Retrieve audit log entries. Optionally filter by event type.\n\n**Event types:**\n- `DOOR_OPEN` — Door was unlocked (keypad or button)\n- `LIGHT_ON` / `LIGHT_OFF` — Lights toggled\n- `CODE_FAIL` — Invalid code entered\n- `REMOTE_DOOR` — Door unlocked via API\n- `REMOTE_LIGHT` — Lights controlled via API\n- `SETTINGS_UPDATE` — Runtime settings changed via API\n- `MODE_CHANGE` — System operating mode changed\n- `SYSTEM_REBOOT` — Reboot requested via API"
+					}
+				},
+				{
+					"name": "Get Settings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/settings",
+							"host": ["{{base_url}}"],
+							"path": ["api", "settings"]
+						},
+						"description": "Read the current live values of every runtime-mutable setting.\n\nReflects the merged view of `.env` defaults plus any overrides persisted in `data/runtime_settings.json`."
+					}
+				},
+				{
+					"name": "Update Settings",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"door_unlock_duration\": 7,\n    \"buzzer_enabled\": true,\n    \"door_open_alarm_enabled\": true,\n    \"door_open_alarm_seconds\": 30,\n    \"display_idle_text\": \"AllDigital\",\n    \"display_idle_subtext\": \"Welcome\",\n    \"app_lang\": \"EN\",\n    \"log_level\": \"INFO\",\n    \"code_length\": 6,\n    \"mask_code_input\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/settings",
+							"host": ["{{base_url}}"],
+							"path": ["api", "settings"]
+						},
+						"description": "Update one or more runtime settings. Send only the keys you want to change — partial bodies are supported. Changes are persisted to `data/runtime_settings.json` and survive a reboot.\n\n**Mutable keys:**\n- `door_unlock_duration` (int 1–60) — door unlock pulse duration in seconds\n- `mask_code_input` (bool) — show entered digits as `*` on the OLED\n- `buzzer_enabled` (bool) — runtime buzzer toggle\n- `door_open_alarm_enabled` (bool) — buzzer alarm if door stays open\n- `door_open_alarm_seconds` (int 5–600) — grace period before the alarm fires\n- `display_idle_text` / `display_idle_subtext` (string ≤40)\n- `app_lang` (`EN` or `KA`)\n- `log_level` (`DEBUG` / `INFO` / `WARNING` / `ERROR` / `CRITICAL`)\n- `code_length` (int 4–8)\n\nReturns 422 for unknown keys, out-of-range values, or attempts to set `system_mode` (use `POST /api/system/mode` instead).\n\nHardware-shape settings (GPIO pins, port, API key, door sensor enable) cannot be changed at runtime — edit `.env` and reboot."
+					}
+				},
+				{
+					"name": "Get System Mode",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/system/mode",
+							"host": ["{{base_url}}"],
+							"path": ["api", "system", "mode"]
+						},
+						"description": "Get the current operating mode.\n\n**Modes:**\n- `normal` — keypad active, exit button works, remote unlock pulses the door for `door_unlock_duration` seconds\n- `keypad_disabled` — keypad ignored; exit button + remote unlock still work\n- `free` — door relay held energized indefinitely (door always open), all light relays held on, keypad ignored, buzzer suppressed, door-open alarm suppressed"
+					}
+				},
+				{
+					"name": "Set System Mode",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"mode\": \"free\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/system/mode",
+							"host": ["{{base_url}}"],
+							"path": ["api", "system", "mode"]
+						},
+						"description": "Switch the operating mode. The new mode is persisted so the system comes back up in the same mode after a reboot.\n\n**Mode value must be one of:** `normal`, `keypad_disabled`, `free`\n\n**Free mode side effects on entry:**\n- Door relay energized (door stays open)\n- All light relays energized indefinitely (no scheduled turn-off)\n- Door-open alarm cancelled and suppressed\n- Display shows `FREE MODE` / `door open`\n- `POST /api/control/door` returns `{\"status\":\"free_mode_noop\"}` instead of pulsing\n\n**On leaving free mode:** door relay drops, all lights off, display returns to idle."
+					}
+				},
+				{
+					"name": "Reboot System",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"confirm\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/system/reboot",
+							"host": ["{{base_url}}"],
+							"path": ["api", "system", "reboot"]
+						},
+						"description": "Reboot the Pi. Requires `confirm: true` in the body to guard against accidental requests, and is rate-limited to **1 call per minute**.\n\nReturns `202 Accepted` immediately and the actual reboot fires from a worker thread one second later, so the response has time to flush. The systemd service comes back up automatically and restores the persisted operating mode.\n\nAudit-logs `SYSTEM_REBOOT`."
 					}
 				}
 			],
-			"description": "Health check and audit logs."
+			"description": "Health, audit logs, runtime settings, operating mode, and reboot."
 		},
 		{
 			"name": "Access Codes",
@@ -140,6 +232,26 @@
 							]
 						},
 						"description": "List all access codes. Use `active_only=true` to filter out deactivated codes."
+					}
+				},
+				{
+					"name": "List Codes With Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/codes/with-status?active_only=false",
+							"host": ["{{base_url}}"],
+							"path": ["api", "codes", "with-status"],
+							"query": [
+								{
+									"key": "active_only",
+									"value": "false",
+									"description": "Set to true to only show codes with is_active=true (a soft-delete flag, not a status filter)"
+								}
+							]
+						},
+						"description": "List every access code with its derived status, dates and uses_remaining computed in one round-trip — saves dashboard clients from calling `/api/codes/check` per row.\n\n**Status values per row:**\n- `active` — within the validity window and has uses left\n- `not_yet_valid` — `valid_from` is in the future\n- `expired` — past `valid_until`\n- `used` — `max_uses` reached and the row was deactivated\n- `inactive` — soft-deleted via DELETE\n\n`uses_remaining` is `null` for unlimited codes and `0` for fully-used ones."
 					}
 				},
 				{

@@ -206,3 +206,96 @@ class AuditLogRead(SQLModel):
     actor: str
     timestamp: datetime
     details: Optional[str]
+
+
+# ─── Settings / system mode schemas ───────────────
+
+
+_VALID_LANGS = ("EN", "KA")
+_VALID_LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
+_VALID_SYSTEM_MODES = ("normal", "keypad_disabled", "free")
+
+
+class SettingsRead(SQLModel):
+    door_unlock_duration: int
+    mask_code_input: bool
+    buzzer_enabled: bool
+    door_open_alarm_enabled: bool
+    door_open_alarm_seconds: int
+    display_idle_text: str
+    display_idle_subtext: str
+    app_lang: str
+    log_level: str
+    code_length: int
+
+
+class SettingsUpdate(SQLModel):
+    # Reject unknown keys outright so a typo (or smuggling in `system_mode`,
+    # which has its own dedicated endpoint) returns 422 instead of being
+    # silently dropped.
+    model_config = {"extra": "forbid"}
+
+    door_unlock_duration: Optional[int] = Field(default=None, ge=1, le=60)
+    mask_code_input: Optional[bool] = None
+    buzzer_enabled: Optional[bool] = None
+    door_open_alarm_enabled: Optional[bool] = None
+    door_open_alarm_seconds: Optional[int] = Field(default=None, ge=5, le=600)
+    display_idle_text: Optional[str] = Field(default=None, max_length=40)
+    display_idle_subtext: Optional[str] = Field(default=None, max_length=40)
+    app_lang: Optional[str] = None
+    log_level: Optional[str] = None
+    code_length: Optional[int] = Field(default=None, ge=4, le=8)
+
+    @field_validator("app_lang")
+    @classmethod
+    def _validate_lang(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        u = v.upper()
+        if u not in _VALID_LANGS:
+            raise ValueError(f"app_lang must be one of {_VALID_LANGS}")
+        return u
+
+    @field_validator("log_level")
+    @classmethod
+    def _validate_log_level(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        u = v.upper()
+        if u not in _VALID_LOG_LEVELS:
+            raise ValueError(f"log_level must be one of {_VALID_LOG_LEVELS}")
+        return u
+
+
+class SystemModeRead(SQLModel):
+    mode: str
+
+
+class SystemModeUpdate(SQLModel):
+    mode: str
+
+    @field_validator("mode")
+    @classmethod
+    def _validate_mode(cls, v: str) -> str:
+        if v not in _VALID_SYSTEM_MODES:
+            raise ValueError(f"mode must be one of {_VALID_SYSTEM_MODES}")
+        return v
+
+
+class RebootRequest(SQLModel):
+    confirm: bool = False
+
+
+class AccessCodeWithStatus(SQLModel):
+    id: int
+    code: str
+    status: str
+    label: Optional[str] = None
+    light_ids: list[int] = []
+    valid_from: datetime
+    valid_until: datetime
+    created_at: datetime
+    max_uses: Optional[int] = None
+    use_count: int
+    uses_remaining: Optional[int] = None
+    is_active: bool

@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Header, Query, Request
 from sqlmodel import Session, col, select
 
 from app import config
-from app.api.endpoints import codes, control
+from app.api.endpoints import codes, control, system
 from app.api.limiter import limiter
 from app.core.database import get_session
 from app.core.models import AuditLog, AuditLogRead
@@ -44,6 +44,13 @@ api_router.include_router(
     control.router,
     prefix="/api/control",
     tags=["control"],
+    dependencies=[Depends(verify_api_key)],
+)
+
+# System (settings, mode, reboot) — requires auth. Routes declare their full
+# path internally because they straddle /api/settings and /api/system/*.
+api_router.include_router(
+    system.router,
     dependencies=[Depends(verify_api_key)],
 )
 

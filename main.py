@@ -13,6 +13,7 @@ from slowapi.errors import RateLimitExceeded
 from app import config
 from app.api.limiter import limiter
 from app.api.router import api_router
+from app.core import runtime_settings
 from app.core.database import init_db, log_event
 from app.core.scheduler import create_scheduler, restore_light_jobs, schedule_cleanup
 from app.hardware.button import ExitButton
@@ -23,6 +24,7 @@ from app.hardware.keypad import KeypadManager
 from app.hardware.relay import RelayController
 from app.services.access import validate_code
 from app.services.light_manager import LightManager
+from app.services.system_mode import SystemModeController
 
 # ─── Logging ──────────────────────────────────────
 
@@ -53,6 +55,7 @@ _light_manager: LightManager
 _keypad: KeypadManager
 _exit_button: ExitButton
 _door_sensor: DoorSensor
+_system_mode: SystemModeController
 
 # Door-open alarm state
 _door_alarm_lock = threading.Lock()
@@ -94,6 +97,11 @@ def _on_key_press(key: str) -> None:
     # ignore all input until the door is physically closed.
     if _door_alarm_display_shown:
         logger.debug("Keypad ignored (door alarm active): %s", key)
+        return
+
+    # Operating mode gate: only `normal` mode accepts keypad input.
+    if not _system_mode.is_keypad_active():
+        logger.debug("Keypad ignored (mode=%s): %s", _system_mode.mode, key)
         return
 
     code_to_submit: str | None = None
@@ -152,8 +160,8 @@ def _submit_code(code: str) -> None:
             _failed_attempts = 0
         _buzzer.beep_success()
         _display.show_success(result.valid_until)
-        _door_relay.pulse(config.DOOR_UNLOCK_DURATION)
-        _schedule_lock_recheck()
+        if _system_mode.unlock_door(actor="keypad"):
+            _schedule_lock_recheck()
 
         for lid in result.light_ids:
             _light_manager.turn_on(lid, result.valid_until)
@@ -194,8 +202,12 @@ def _submit_code(code: str) -> None:
 
 
 def _on_exit_button() -> None:
+    if not _system_mode.unlock_door(actor="button"):
+        # Free mode keeps the door open already; suppress the chirp + log so
+        # the button press doesn't pretend to do something it didn't.
+        logger.debug("Exit button ignored (mode=%s)", _system_mode.mode)
+        return
     _buzzer.beep_success()
-    _door_relay.pulse(config.DOOR_UNLOCK_DURATION)
     _schedule_lock_recheck()
     log_event("DOOR_OPEN", actor="button")
     logger.info("Exit button — door unlocked for %ds", config.DOOR_UNLOCK_DURATION)
@@ -223,6 +235,9 @@ def _evaluate_door_alarm() -> None:
     once at startup.
     """
     if not config.DOOR_OPEN_ALARM_ENABLED:
+        return
+    if _system_mode.is_free():
+        # The door is *supposed* to be open in free mode — never alarm.
         return
     if not _door_sensor.is_available():
         return
@@ -361,7 +376,7 @@ def _shutdown(signum=None, frame=None) -> None:
 # ─── Main ─────────────────────────────────────────
 
 def main() -> None:
-    global _door_relay, _buzzer, _display, _light_manager, _keypad, _exit_button, _door_sensor, _scheduler
+    global _door_relay, _buzzer, _display, _light_manager, _keypad, _exit_button, _door_sensor, _scheduler, _system_mode
 
     # Refuse to start with the placeholder API key — would leave the system wide open.
     if config.API_KEY == config.DEFAULT_API_KEY_PLACEHOLDER or not config.API_KEY:
@@ -370,6 +385,13 @@ def main() -> None:
             "Set a strong value in .env (e.g. `openssl rand -hex 32`) before starting."
         )
         sys.exit(1)
+
+    # Apply runtime overrides on top of the .env baseline before any hardware
+    # is constructed, so things like buzzer_enabled / log_level take effect
+    # from the very first byte we initialize.
+    overrides = runtime_settings.load()
+    runtime_settings.apply_overrides(overrides)
+    logging.getLogger().setLevel(getattr(logging, config.LOG_LEVEL, logging.INFO))
 
     logger.info("Starting Padel Access Control System")
 
@@ -399,6 +421,19 @@ def main() -> None:
     # 6. Init buzzer
     _buzzer = Buzzer(config.BUZZER_GPIO, config.BUZZER_ENABLED)
 
+    # 6b. Init system mode controller. Must be created before any door /
+    # keypad event handler can run (KeypadManager + ExitButton are wired
+    # below in steps 8-9). The mode is *restored* from disk further down
+    # after the FastAPI app exists so app.state can carry it.
+    _system_mode = SystemModeController(
+        _door_relay,
+        _light_manager,
+        _buzzer,
+        _display,
+        persist_fn=lambda m: runtime_settings.save_partial({"system_mode": m}),
+        cancel_door_alarm_fn=_cancel_door_open_alarm,
+    )
+
     # 7. Build FastAPI app
     app = FastAPI(title="Padel Access Control")
     app.state.limiter = limiter
@@ -409,6 +444,9 @@ def main() -> None:
     app.state.buzzer = _buzzer
     app.state.scheduler = _scheduler
     app.state.schedule_lock_recheck = _schedule_lock_recheck
+    app.state.system_mode = _system_mode
+    app.state.display = _display
+    app.state.cancel_door_open_alarm = _cancel_door_open_alarm
 
     # 8. Init keypad
     _keypad = KeypadManager(
@@ -442,12 +480,24 @@ def main() -> None:
     server_thread.start()
     logger.info("API server started on %s:%d", config.APP_HOST, config.APP_PORT)
 
-    # 11. Show idle screen
-    _display.show_idle()
+    # 11. Restore persisted system mode (no-op if "normal").
+    # If the device was last left in "free" mode, this re-energizes the door
+    # relay + lights and paints "FREE MODE" on the display.
+    _system_mode.restore(overrides.get("system_mode", "normal"))
 
-    # 11b. Evaluate door alarm — if we boot with the door already open and
-    # the lock engaged, this will arm the timer and show "CLOSE THE DOOR".
-    _evaluate_door_alarm()
+    # 11b. Display: only call show_idle in normal mode. The mode controller
+    # handles its own display painting for non-normal modes (keypad_disabled
+    # uses a timed message that auto-returns to idle; free mode shows
+    # "FREE MODE" indefinitely).
+    if _system_mode.mode == "normal":
+        _display.show_idle()
+
+    # 11c. Evaluate door-open alarm only when not in free mode — the door is
+    # supposed to be open in free mode and the alarm gate inside
+    # `_evaluate_door_alarm` would already short-circuit, but skipping the
+    # call also avoids a stray log line.
+    if not _system_mode.is_free():
+        _evaluate_door_alarm()
 
     # 12. Register signal handlers and block
     signal.signal(signal.SIGTERM, _shutdown)

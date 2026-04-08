@@ -17,6 +17,7 @@ from app.core.models import (
     AccessCodeRead,
     AccessCodeStatus,
     AccessCodeUpdate,
+    AccessCodeWithStatus,
 )
 
 
@@ -46,6 +47,24 @@ def _to_read(ac: AccessCode) -> AccessCodeRead:
         is_active=ac.is_active,
         created_at=ac.created_at,
     )
+
+
+def _compute_status(ac: AccessCode, now: datetime) -> tuple[str, "int | None"]:
+    """Derive a code's status string and remaining uses from its row state."""
+    if not ac.is_active:
+        if ac.max_uses is not None and ac.use_count >= ac.max_uses:
+            return "used", 0
+        return "inactive", None
+    if now < ac.valid_from:
+        status = "not_yet_valid"
+    elif now > ac.valid_until:
+        status = "expired"
+    else:
+        status = "active"
+    uses_remaining = None
+    if ac.max_uses is not None:
+        uses_remaining = max(0, ac.max_uses - ac.use_count)
+    return status, uses_remaining
 
 
 def _generate_unique_code(session: Session, length: int = 6) -> str:
@@ -126,6 +145,48 @@ def list_codes(
     return [_to_read(ac) for ac in codes]
 
 
+# IMPORTANT: this route MUST be declared before `get_code` (`/{code_id}`)
+# below — otherwise FastAPI matches the path parameter first and tries to
+# parse "with-status" as an integer code id.
+@router.get("/with-status", response_model=list[AccessCodeWithStatus])
+@limiter.limit("30/minute")
+def list_codes_with_status(
+    request: Request,
+    active_only: bool = False,
+    session: Session = Depends(get_session),
+):
+    """List every code with its derived status and uses_remaining.
+
+    Computed in one round-trip for the operator dashboard. `active_only`
+    filters by the `is_active` flag (a soft-delete marker), not by the
+    derived status — keep parity with `list_codes`.
+    """
+    statement = select(AccessCode)
+    if active_only:
+        statement = statement.where(AccessCode.is_active == True)  # noqa: E712
+    now = _utcnow()
+    out: list[AccessCodeWithStatus] = []
+    for ac in session.exec(statement).all():
+        status, remaining = _compute_status(ac, now)
+        out.append(
+            AccessCodeWithStatus(
+                id=ac.id,
+                code=ac.code,
+                status=status,
+                label=ac.label,
+                light_ids=ac.light_ids_list,
+                valid_from=ac.valid_from,
+                valid_until=ac.valid_until,
+                created_at=ac.created_at,
+                max_uses=ac.max_uses,
+                use_count=ac.use_count,
+                uses_remaining=remaining,
+                is_active=ac.is_active,
+            )
+        )
+    return out
+
+
 @router.post("/check", response_model=AccessCodeStatus)
 @limiter.limit("10/minute")
 def check_code(body: CodeCheckRequest, request: Request, session: Session = Depends(get_session)):
@@ -138,23 +199,7 @@ def check_code(body: CodeCheckRequest, request: Request, session: Session = Depe
     if not ac:
         return AccessCodeStatus(code=code, status="not_found")
 
-    now = _utcnow()
-
-    if not ac.is_active:
-        if ac.max_uses is not None and ac.use_count >= ac.max_uses:
-            status = "used"
-        else:
-            status = "inactive"
-    elif now < ac.valid_from:
-        status = "not_yet_valid"
-    elif now > ac.valid_until:
-        status = "expired"
-    else:
-        status = "active"
-
-    uses_remaining = None
-    if ac.max_uses is not None:
-        uses_remaining = max(0, ac.max_uses - ac.use_count)
+    status, uses_remaining = _compute_status(ac, _utcnow())
 
     return AccessCodeStatus(
         code=ac.code,
