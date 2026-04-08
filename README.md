@@ -31,6 +31,7 @@ Raspberry Pi 4 (Ubuntu Server 24) based access control for a padel facility. Con
 | 5 | 0.96" OLED I2C SSD1306 (128x64) | I2C SDA=GPIO2, SCL=GPIO3 | Display |
 | 6 | Exit Button (NO momentary) | GPIO 26 (pull-up) | Door release from inside |
 | 7 | Active Buzzer (5V) | GPIO 24 | Audio feedback |
+| 8 | Magnetic Reed Sensor (NO) | GPIO 23 (pull-up) | Door close detection — magnet contacts when door is closed |
 
 > All relay modules are **active-LOW** (GPIO LOW = relay ON).
 
@@ -168,6 +169,17 @@ curl https://your-host.example.com/api/control/status \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
+### Door Status (reed sensor)
+
+```bash
+curl https://your-host.example.com/api/control/door/status \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+Returns `{"sensor_available": true, "closed": true|false, "lock_engaged": true|false}`.
+`closed` reflects the magnetic reed sensor; `lock_engaged` reflects the door relay.
+`closed` is `null` when the sensor is disabled or failed to initialize.
+
 ### Audit Logs
 
 ```bash
@@ -175,7 +187,7 @@ curl "https://your-host.example.com/api/logs?limit=50&event=DOOR_OPEN" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-**Event types:** `DOOR_OPEN`, `LIGHT_ON`, `LIGHT_OFF`, `CODE_FAIL`, `REMOTE_DOOR`, `REMOTE_LIGHT`
+**Event types:** `DOOR_OPEN`, `DOOR_OPENED`, `DOOR_CLOSED`, `DOOR_ALARM`, `DOOR_ALARM_CLEARED`, `LIGHT_ON`, `LIGHT_OFF`, `CODE_FAIL`, `REMOTE_DOOR`, `REMOTE_LIGHT`
 
 ## Project Structure
 

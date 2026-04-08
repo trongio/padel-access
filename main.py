@@ -18,6 +18,7 @@ from app.core.scheduler import create_scheduler, restore_light_jobs, schedule_cl
 from app.hardware.button import ExitButton
 from app.hardware.buzzer import Buzzer
 from app.hardware.display import DisplayManager
+from app.hardware.door_sensor import DoorSensor
 from app.hardware.keypad import KeypadManager
 from app.hardware.relay import RelayController
 from app.services.access import validate_code
@@ -51,6 +52,13 @@ _display: DisplayManager
 _light_manager: LightManager
 _keypad: KeypadManager
 _exit_button: ExitButton
+_door_sensor: DoorSensor
+
+# Door-open alarm state
+_door_alarm_lock = threading.Lock()
+_door_alarm_timer: threading.Timer | None = None
+_door_alarm_active = False
+_door_alarm_display_shown = False
 
 
 def _reset_input() -> None:
@@ -81,6 +89,12 @@ def _on_input_timeout() -> None:
 
 def _on_key_press(key: str) -> None:
     global _input_buffer
+
+    # Keypad is locked while the "CLOSE THE DOOR" alarm message is showing —
+    # ignore all input until the door is physically closed.
+    if _door_alarm_display_shown:
+        logger.debug("Keypad ignored (door alarm active): %s", key)
+        return
 
     code_to_submit: str | None = None
 
@@ -139,6 +153,7 @@ def _submit_code(code: str) -> None:
         _buzzer.beep_success()
         _display.show_success(result.valid_until)
         _door_relay.pulse(config.DOOR_UNLOCK_DURATION)
+        _schedule_lock_recheck()
 
         for lid in result.light_ids:
             _light_manager.turn_on(lid, result.valid_until)
@@ -181,8 +196,141 @@ def _submit_code(code: str) -> None:
 def _on_exit_button() -> None:
     _buzzer.beep_success()
     _door_relay.pulse(config.DOOR_UNLOCK_DURATION)
+    _schedule_lock_recheck()
     log_event("DOOR_OPEN", actor="button")
     logger.info("Exit button — door unlocked for %ds", config.DOOR_UNLOCK_DURATION)
+
+
+def _on_door_sensor_change(closed: bool) -> None:
+    """Handle physical door open/close transitions reported by the reed sensor."""
+    if closed:
+        log_event("DOOR_CLOSED", actor="sensor")
+        _cancel_door_open_alarm()
+    else:
+        log_event("DOOR_OPENED", actor="sensor")
+        _evaluate_door_alarm()
+
+
+def _evaluate_door_alarm() -> None:
+    """Decide whether the door-open alarm should be armed *right now*.
+
+    The alarm only makes sense when the door is physically open AND the
+    door lock is engaged. While the door relay is energized (lock released
+    by a recent unlock), opening the door is legitimate, so we defer the
+    check until the lock re-engages — see `_schedule_lock_recheck`.
+
+    Called when the sensor reports OPENED, after every unlock pulse, and
+    once at startup.
+    """
+    if not config.DOOR_OPEN_ALARM_ENABLED:
+        return
+    if not _door_sensor.is_available():
+        return
+    if _door_sensor.is_closed():
+        return
+    if _door_relay.is_on():
+        # Lock currently disengaged — defer until it re-engages.
+        logger.debug("Door open while relay unlocked — deferring alarm check")
+        return
+    _arm_door_open_alarm()
+    _show_alarm_message()
+
+
+def _show_alarm_message() -> None:
+    global _door_alarm_display_shown
+    _door_alarm_display_shown = True
+    # Drop any in-progress keypad code — the keypad is locked while the
+    # alarm message is up, and a stale buffer would surface again the
+    # moment the message clears.
+    _reset_input()
+    _display.show_message(
+        config.LANG["close_door_line1"],
+        config.LANG["close_door_line2"],
+    )
+
+
+def _hide_alarm_message() -> None:
+    global _door_alarm_display_shown
+    if _door_alarm_display_shown:
+        _door_alarm_display_shown = False
+        _display.show_idle()
+
+
+def _arm_door_open_alarm() -> None:
+    """Schedule the buzzer alarm to fire if the door isn't closed in time."""
+    if config.DOOR_OPEN_ALARM_SECONDS <= 0:
+        return
+
+    global _door_alarm_timer
+    with _door_alarm_lock:
+        if _door_alarm_timer is not None:
+            _door_alarm_timer.cancel()
+        _door_alarm_timer = threading.Timer(
+            config.DOOR_OPEN_ALARM_SECONDS, _trigger_door_open_alarm
+        )
+        _door_alarm_timer.daemon = True
+        _door_alarm_timer.start()
+        logger.debug(
+            "Door-open alarm armed (fires in %ds)", config.DOOR_OPEN_ALARM_SECONDS
+        )
+
+
+def _cancel_door_open_alarm() -> None:
+    """Cancel a pending alarm timer and silence the buzzer + display."""
+    global _door_alarm_timer, _door_alarm_active
+    with _door_alarm_lock:
+        if _door_alarm_timer is not None:
+            _door_alarm_timer.cancel()
+            _door_alarm_timer = None
+        was_active = _door_alarm_active
+        _door_alarm_active = False
+    if was_active:
+        _buzzer.stop_alarm()
+        log_event("DOOR_ALARM_CLEARED", actor="sensor")
+        logger.info("Door-open alarm cleared (door now closed)")
+    _hide_alarm_message()
+
+
+def _trigger_door_open_alarm() -> None:
+    global _door_alarm_active, _door_alarm_timer
+    # Re-check the actual sensor state — if the door closed in the gap
+    # between the timer firing and us being scheduled, do nothing.
+    if _door_sensor.is_closed():
+        return
+    with _door_alarm_lock:
+        _door_alarm_active = True
+        _door_alarm_timer = None
+    _buzzer.start_alarm()
+    # Defensive: ensure the message is on screen even if it was cleared
+    # (e.g. by an idle return) between arming and firing.
+    _show_alarm_message()
+    log_event(
+        "DOOR_ALARM",
+        actor="sensor",
+        details=f"door open >{config.DOOR_OPEN_ALARM_SECONDS}s",
+    )
+    logger.warning(
+        "Door-open alarm triggered — door has been open for %ds",
+        config.DOOR_OPEN_ALARM_SECONDS,
+    )
+
+
+def _schedule_lock_recheck() -> None:
+    """Re-evaluate the alarm shortly after the door lock re-engages.
+
+    Called whenever something triggers a door unlock pulse (keypad code,
+    exit button, remote API). After the relay's pulse duration elapses
+    plus a small grace period, we re-check the door sensor — if the door
+    is still open then, the user genuinely left it open.
+    """
+    if not config.DOOR_OPEN_ALARM_ENABLED:
+        return
+    if not _door_sensor.is_available():
+        return
+    delay = config.DOOR_UNLOCK_DURATION + 0.5
+    t = threading.Timer(delay, _evaluate_door_alarm)
+    t.daemon = True
+    t.start()
 
 
 # ─── Shutdown ─────────────────────────────────────
@@ -193,6 +341,7 @@ _shutdown_event = threading.Event()
 def _shutdown(signum=None, frame=None) -> None:
     logger.info("Shutting down...")
     _reset_input()
+    _cancel_door_open_alarm()
     # Drop the relays to OFF for safety, but keep the persisted scheduler
     # jobs so an in-progress booking can be restored on the next startup.
     _light_manager.shutdown_relays_keep_jobs()
@@ -201,6 +350,7 @@ def _shutdown(signum=None, frame=None) -> None:
     _scheduler.shutdown(wait=False)
     _keypad.cleanup()
     _exit_button.cleanup()
+    _door_sensor.cleanup()
     _buzzer.cleanup()
     _display.shutdown()
     _shutdown_event.set()
@@ -211,7 +361,7 @@ def _shutdown(signum=None, frame=None) -> None:
 # ─── Main ─────────────────────────────────────────
 
 def main() -> None:
-    global _door_relay, _buzzer, _display, _light_manager, _keypad, _exit_button, _scheduler
+    global _door_relay, _buzzer, _display, _light_manager, _keypad, _exit_button, _door_sensor, _scheduler
 
     # Refuse to start with the placeholder API key — would leave the system wide open.
     if config.API_KEY == config.DEFAULT_API_KEY_PLACEHOLDER or not config.API_KEY:
@@ -258,6 +408,7 @@ def main() -> None:
     app.state.light_manager = _light_manager
     app.state.buzzer = _buzzer
     app.state.scheduler = _scheduler
+    app.state.schedule_lock_recheck = _schedule_lock_recheck
 
     # 8. Init keypad
     _keypad = KeypadManager(
@@ -268,6 +419,14 @@ def main() -> None:
 
     # 9. Init exit button
     _exit_button = ExitButton(config.EXIT_BUTTON_GPIO, _on_exit_button)
+
+    # 9b. Init door close sensor (NO magnetic reed)
+    _door_sensor = DoorSensor(
+        config.DOOR_SENSOR_GPIO,
+        on_change_callback=_on_door_sensor_change,
+        enabled=config.DOOR_SENSOR_ENABLED,
+    )
+    app.state.door_sensor = _door_sensor
 
     # 10. Start uvicorn in daemon thread
     server_thread = threading.Thread(
@@ -285,6 +444,10 @@ def main() -> None:
 
     # 11. Show idle screen
     _display.show_idle()
+
+    # 11b. Evaluate door alarm — if we boot with the door already open and
+    # the lock engaged, this will arm the timer and show "CLOSE THE DOOR".
+    _evaluate_door_alarm()
 
     # 12. Register signal handlers and block
     signal.signal(signal.SIGTERM, _shutdown)

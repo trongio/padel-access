@@ -65,10 +65,39 @@ def remote_door(request: Request):
 
     door_relay.pulse(duration)
     buzzer.beep_success()
+
+    # Tell the door-open alarm to re-check after the lock re-engages.
+    schedule_recheck = getattr(request.app.state, "schedule_lock_recheck", None)
+    if schedule_recheck is not None:
+        schedule_recheck()
+
     log_event("REMOTE_DOOR", actor="api", details=f"duration={duration}s")
 
     logger.info("Remote door unlock triggered")
     return {"status": "unlocked", "duration": duration}
+
+
+@router.get("/door/status")
+def door_status(request: Request):
+    """Return the current door state from the magnetic reed sensor.
+
+    `sensor_available` is false if the sensor is disabled in config or
+    failed to initialize at startup — in that case `closed` is null.
+    """
+    door_sensor = getattr(request.app.state, "door_sensor", None)
+    door_relay = request.app.state.door_relay
+
+    if door_sensor is None or not door_sensor.is_available():
+        return {
+            "sensor_available": False,
+            "closed": None,
+            "lock_engaged": not door_relay.is_on(),
+        }
+    return {
+        "sensor_available": True,
+        "closed": door_sensor.is_closed(),
+        "lock_engaged": not door_relay.is_on(),
+    }
 
 
 @router.post("/lights")
@@ -116,6 +145,7 @@ def remote_lights(request: Request, body: LightControlRequest):
 def relay_status(request: Request):
     door_relay = request.app.state.door_relay
     light_manager = request.app.state.light_manager
+    door_sensor = getattr(request.app.state, "door_sensor", None)
 
     light_status = light_manager.get_status()
     lights_resp = {}
@@ -125,7 +155,15 @@ def relay_status(request: Request):
             "until": info["until"].isoformat() if info["until"] else None,
         }
 
+    door_resp: dict = {"locked": not door_relay.is_on()}
+    if door_sensor is not None and door_sensor.is_available():
+        door_resp["closed"] = door_sensor.is_closed()
+        door_resp["sensor_available"] = True
+    else:
+        door_resp["closed"] = None
+        door_resp["sensor_available"] = False
+
     return {
-        "door": {"locked": not door_relay.is_on()},
+        "door": door_resp,
         "lights": lights_resp,
     }

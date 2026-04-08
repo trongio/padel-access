@@ -45,6 +45,8 @@ _TRANSLATIONS = {
         "code_used": "Code already used",
         "shutting_down": "Shutting down...",
         "until": "Until",
+        "close_door_line1": "CLOSE THE",
+        "close_door_line2": "DOOR",
     },
     "KA": {
         "enter_code": "შეიყვანეთ კოდი:",
@@ -56,6 +58,8 @@ _TRANSLATIONS = {
         "code_used": "კოდი უკვე გამოყენებულია",
         "shutting_down": "გამორთვა...",
         "until": "სანამ",
+        "close_door_line1": "დახურეთ",
+        "close_door_line2": "კარი",
     },
 }
 
@@ -81,6 +85,14 @@ DOOR_RELAY_GPIO: int = int(os.getenv("DOOR_RELAY_GPIO", "17"))
 DOOR_UNLOCK_DURATION: int = int(os.getenv("DOOR_UNLOCK_DURATION", "5"))
 
 EXIT_BUTTON_GPIO: int = int(os.getenv("EXIT_BUTTON_GPIO", "26"))
+
+# Magnetic reed door sensor (normally-open: closed circuit when door is closed).
+DOOR_SENSOR_GPIO: int = int(os.getenv("DOOR_SENSOR_GPIO", "23"))
+DOOR_SENSOR_ENABLED: bool = _bool(os.getenv("DOOR_SENSOR_ENABLED", "true"), default=True)
+# Sound the buzzer if the door stays open longer than this many seconds.
+# Requires DOOR_SENSOR_ENABLED. Set DOOR_OPEN_ALARM_ENABLED=false to disable.
+DOOR_OPEN_ALARM_ENABLED: bool = _bool(os.getenv("DOOR_OPEN_ALARM_ENABLED", "false"), default=False)
+DOOR_OPEN_ALARM_SECONDS: int = int(os.getenv("DOOR_OPEN_ALARM_SECONDS", "30"))
 
 BUZZER_GPIO: int = int(os.getenv("BUZZER_GPIO", "24"))
 BUZZER_ENABLED: bool = _bool(os.getenv("BUZZER_ENABLED", "true"), default=True)
