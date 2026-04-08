@@ -12,8 +12,11 @@ Raspberry Pi 4 (Ubuntu Server 24) based access control for a padel facility. Con
 - One-time and multi-use access codes
 - Auto-generate random codes for booking integration
 - REST API for remote control and code management
+- Runtime-mutable settings (durations, language, log level, alarm toggles…) persisted across reboots
+- Operating modes: `normal`, `keypad_disabled`, `free` (door always open + lights on)
+- Remote reboot endpoint
 - Cloudflare Tunnel for secure public access
-- Audit logging for all door and light events
+- Audit logging for all door, light, settings, mode and reboot events
 - Graceful hardware degradation (runs API-only without hardware)
 
 ## Hardware Wiring
@@ -180,6 +183,68 @@ Returns `{"sensor_available": true, "closed": true|false, "lock_engaged": true|f
 `closed` reflects the magnetic reed sensor; `lock_engaged` reflects the door relay.
 `closed` is `null` when the sensor is disabled or failed to initialize.
 
+### List Codes With Status
+
+```bash
+curl https://your-host.example.com/api/codes/with-status \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+Returns every code together with its derived status (`active`, `not_yet_valid`, `expired`, `used`, `inactive`), `uses_remaining`, and the full date set in one round-trip — saves dashboard clients from calling `/api/codes/check` per row.
+
+### Settings
+
+```bash
+# Read every runtime-mutable setting
+curl https://your-host.example.com/api/settings \
+  -H "Authorization: Bearer YOUR_API_KEY"
+
+# Change one or more settings (partial body supported)
+curl -X PATCH https://your-host.example.com/api/settings \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"door_unlock_duration": 7, "buzzer_enabled": true, "log_level": "DEBUG"}'
+```
+
+Changes are persisted to `data/runtime_settings.json` and survive a reboot. Hardware-shape settings (GPIO pins, port, `API_KEY`, `DOOR_SENSOR_ENABLED`) are intentionally **not** mutable at runtime — edit `.env` and reboot.
+
+**Mutable keys:** `door_unlock_duration` (1–60), `mask_code_input` (bool), `buzzer_enabled` (bool), `door_open_alarm_enabled` (bool), `door_open_alarm_seconds` (5–600), `display_idle_text`, `display_idle_subtext`, `app_lang` (`EN`/`KA`), `log_level`, `code_length` (4–8).
+
+Unknown keys and any attempt to set `system_mode` are rejected with 422 — use the dedicated mode endpoint.
+
+### System Mode
+
+```bash
+# Get current mode
+curl https://your-host.example.com/api/system/mode \
+  -H "Authorization: Bearer YOUR_API_KEY"
+
+# Switch mode (normal | keypad_disabled | free)
+curl -X POST https://your-host.example.com/api/system/mode \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"mode": "free"}'
+```
+
+| Mode | Behavior |
+|------|----------|
+| `normal` | Keypad active, exit button works, remote unlock pulses for `door_unlock_duration` seconds |
+| `keypad_disabled` | Keypad ignored; exit button + remote unlock still pulse the door |
+| `free` | Door relay held energized indefinitely (door stays open), all light relays held on, keypad ignored, buzzer suppressed, door-open alarm silenced. Display shows `FREE MODE / door open`. |
+
+The mode is persisted, so the device comes back up in the same mode after a reboot. While in free mode, `POST /api/control/door` returns `{"status": "free_mode_noop"}` instead of pulsing the relay.
+
+### Reboot
+
+```bash
+curl -X POST https://your-host.example.com/api/system/reboot \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"confirm": true}'
+```
+
+Requires `"confirm": true` in the body and is rate-limited to **1 call per minute**. Returns `202 Accepted` immediately; the actual reboot fires from a worker thread one second later so the response has time to flush.
+
 ### Audit Logs
 
 ```bash
@@ -187,35 +252,42 @@ curl "https://your-host.example.com/api/logs?limit=50&event=DOOR_OPEN" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-**Event types:** `DOOR_OPEN`, `DOOR_OPENED`, `DOOR_CLOSED`, `DOOR_ALARM`, `DOOR_ALARM_CLEARED`, `LIGHT_ON`, `LIGHT_OFF`, `CODE_FAIL`, `REMOTE_DOOR`, `REMOTE_LIGHT`
+**Event types:** `DOOR_OPEN`, `DOOR_OPENED`, `DOOR_CLOSED`, `DOOR_ALARM`, `DOOR_ALARM_CLEARED`, `LIGHT_ON`, `LIGHT_OFF`, `CODE_FAIL`, `REMOTE_DOOR`, `REMOTE_LIGHT`, `SETTINGS_UPDATE`, `MODE_CHANGE`, `SYSTEM_REBOOT`
 
 ## Project Structure
 
 ```
 padel-access/
-├── main.py                  # Entry point: startup, keypad flow, shutdown
+├── main.py                       # Entry point: startup, keypad flow, shutdown
 ├── app/
-│   ├── config.py            # Environment config loader
+│   ├── config.py                 # Environment config loader (.env baseline)
 │   ├── api/
-│   │   ├── router.py        # FastAPI router, auth, health, logs
+│   │   ├── router.py             # FastAPI router, auth, health, logs
 │   │   └── endpoints/
-│   │       ├── codes.py     # Codes CRUD + generate
-│   │       └── control.py   # Door/light remote control
+│   │       ├── codes.py          # Codes CRUD + generate + with-status
+│   │       ├── control.py        # Door/light remote control
+│   │       └── system.py         # Settings, system mode, reboot
 │   ├── core/
-│   │   ├── database.py      # SQLite engine, sessions, migrations
-│   │   ├── models.py        # SQLModel tables + Pydantic schemas
-│   │   └── scheduler.py     # APScheduler with job persistence
+│   │   ├── database.py           # SQLite engine, sessions, migrations
+│   │   ├── models.py             # SQLModel tables + Pydantic schemas
+│   │   ├── scheduler.py          # APScheduler with job persistence
+│   │   └── runtime_settings.py   # JSON overlay for runtime-mutable settings
 │   ├── hardware/
-│   │   ├── relay.py         # Thread-safe GPIO relay controller
-│   │   ├── keypad.py        # 3x4 matrix keypad (pad4pi)
-│   │   ├── display.py       # OLED SSD1306 queue-based display
-│   │   ├── buzzer.py        # Active buzzer with beep patterns
-│   │   └── button.py        # Exit button with edge detection
+│   │   ├── relay.py              # Thread-safe GPIO relay controller
+│   │   ├── keypad.py             # 3x4 matrix keypad (pad4pi)
+│   │   ├── display.py            # OLED SSD1306 queue-based display
+│   │   ├── buzzer.py             # Active buzzer with beep patterns
+│   │   ├── button.py             # Exit button with edge detection
+│   │   └── door_sensor.py        # Magnetic reed sensor (door open/closed)
 │   └── services/
-│       ├── access.py        # Code validation + use tracking
-│       └── light_manager.py # Light zones with auto-off scheduling
-├── scripts/                 # init, start, stop, restart, status
-├── systemd/                 # padel-access.service, padel-tunnel.service
+│       ├── access.py             # Code validation + use tracking
+│       ├── light_manager.py      # Light zones with auto-off scheduling
+│       └── system_mode.py        # Operating mode controller + unlock funnel
+├── data/
+│   ├── padel_access.db           # SQLite (codes + audit log)
+│   └── runtime_settings.json     # Persisted setting overrides + system_mode
+├── scripts/                      # init, start, stop, restart, status
+├── systemd/                      # padel-access.service, padel-tunnel.service
 ├── Padel_Access_API.postman_collection.json
 ├── .env.example
 └── requirements.txt
